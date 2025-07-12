@@ -1,5 +1,5 @@
 import { validationResult } from 'express-validator';
-// import * as authService from '../services/authService.js';
+import { registerUser, loginUser } from '../services/authService.js';
 
 export const register = async (req, res, next) => {
   const errors = validationResult(req);
@@ -7,7 +7,7 @@ export const register = async (req, res, next) => {
     return res.status(400).json({ errors: errors.array() });
 
   try {
-    const result = await authService.registerUser(req.body);
+    const result = await registerUser(req.body);
     res.status(201).json(result);
   } catch (err) {
     next(err);
@@ -16,7 +16,7 @@ export const register = async (req, res, next) => {
 
 export const login = async (req, res, next) => {
   try {
-    const result = await authService.loginUser(req.body);
+    const result = await loginUser(req.body);
     res.json(result);
   } catch (err) {
     next(err);
