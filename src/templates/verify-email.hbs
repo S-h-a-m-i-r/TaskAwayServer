@@ -1,0 +1,72 @@
+<html>
+  <head>
+    <meta charset='UTF-8' />
+    <title>Verify Your Email - TaskAway</title>
+  </head>
+  <body
+    style='margin: 0; padding: 0; background-color: #f7f7f7; font-family: Arial, sans-serif;'
+  >
+    <table
+      width='100%'
+      cellpadding='0'
+      cellspacing='0'
+      style='background-color: #f7f7f7; padding: 40px 0;'
+    >
+      <tr>
+        <td align='center'>
+          <table
+            width='600'
+            cellpadding='0'
+            cellspacing='0'
+            style='background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 0 10px rgba(0,0,0,0.05);'
+          >
+            <tr>
+              <td
+                style='background-color: #5051f9; padding: 20px; text-align: center;'
+              >
+                <img
+                  src='https://i.imgur.com/Vz7kA7R.png'
+                  alt='TaskAway Logo'
+                  width='140'
+                  style='margin-bottom: 10px;'
+                />
+              </td>
+            </tr>
+            <tr>
+              <td style='padding: 30px;'>
+                <h2 style='color: #333333;'>Hello {{name}},</h2>
+                <p style='color: #555555; font-size: 16px; line-height: 1.5;'>
+                  Thank you for registering with
+                  <strong
+                    style='font-size: 20px; font-weight:900; color: #5051f9'
+                  >TaskAway</strong>. Please confirm your email address by
+                  clicking the button below:
+                </p>
+                <p style='text-align: center; margin: 30px 0;'>
+                  <a
+                    href='{{verifyUrl}}'
+                    style='background-color: #5051f9; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;'
+                  >
+                    Verify Email
+                  </a>
+                </p>
+                <p style='color: #999999; font-size: 14px;'>
+                  This verification link will expire in 24 hours. If you didn’t
+                  create a TaskAway account, you can safely ignore this email.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td
+                style='background-color: #f0f0f0; text-align: center; padding: 20px; font-size: 12px; color: #888888;'
+              >
+                &copy; 2025 TaskAway. All rights reserved.<br />
+                123 Startup Blvd, NEWYORK, US
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
