@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import handlebars from 'handlebars';
 import emailConfig from '../config/email.js';
-import User from '../models/Users.js';
+import User from '../models/User.js';
 const transporter = nodemailer.createTransport(emailConfig);
 export const verifyUserEmail = async (req, res) => {
   const { token, id } = req.query;

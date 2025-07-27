@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
-const roles = ['CUSTOMER', 'ADMIN', 'MANAGER', 'BASIC'];
+import { ROLES } from '../utils/utilityEnums.js';
 
 const userSchema = new mongoose.Schema(
   {
@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema(
     thirdLastPassword: { type: String, default: null },
     role: {
       type: String,
-      enum: roles,
+      enum: ROLES,
       default: 'CUSTOMER'
     },
     planType: {
@@ -71,5 +71,5 @@ userSchema.methods.comparePassword = function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.passwordHash);
 };
 
-const User = mongoose.model('Users', userSchema);
+const User = mongoose.model('User', userSchema);
 export default User;

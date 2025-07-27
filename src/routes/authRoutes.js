@@ -8,7 +8,6 @@ import {
 } from '../controllers/authController.js';
 import { validateRegister } from '../middleware/validateRegister.js';
 import { verifyEmail } from '../services/authService.js';
-import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 

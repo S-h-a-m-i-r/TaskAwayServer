@@ -7,7 +7,7 @@ import {
   resetUserPassword
 } from '../services/authService.js';
 import { sendEmail } from '../services/emailService.js';
-import User from '../models/Users.js';
+import User from '../models/User.js';
 
 export const register = async (req, res, next) => {
   const errors = validationResult(req);
@@ -45,15 +45,11 @@ export const login = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: result?.userData,
+      user: result?.userData,
       token: result?.token
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Unexpected server error',
-      details: error.message
-    });
+    next(err);
   }
 };
 
@@ -71,11 +67,7 @@ export const forgotPassword = async (req, res) => {
     const result = await forgetUserPassword(req, res);
     res.status(200).json(result);
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: 'Unexpected server error',
-      details: err.message
-    });
+    next(err);
   }
 };
 
@@ -83,10 +75,6 @@ export const resetPassword = async (req, res) => {
   try {
     await resetUserPassword(req, res);
   } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: 'Unexpected server error',
-      details: err.message
-    });
+    next(err);
   }
 };
