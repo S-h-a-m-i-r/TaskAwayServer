@@ -5,6 +5,7 @@ import {
 } from '../utils/generateToken.js';
 import { verifyUserEmail, sendEmail } from './emailService.js';
 import bcrypt from 'bcryptjs';
+import { createError } from '../utils/AppError.js';
 export const registerUser = async ({
   firstName,
   lastName,
@@ -15,11 +16,24 @@ export const registerUser = async ({
   planType
 }) => {
   const userExists = await User.findOne({ email });
-  if (userExists) throw new Error('User already exists');
-  const usernameCount = await User.countDocuments({ userName });
-  if (usernameCount >= 2) {
-    throw new Error('Only two users can have the same username.');
+  if (userExists) {
+    throw createError.conflict('Email already exists', {
+      field: 'email',
+      value: email
+    });
   }
+
+  // Check if username already exists (only if username is provided)
+  if (userName) {
+    const existingUser = await User.findOne({ userName });
+    if (existingUser) {
+      throw createError.conflict('Username already exists', {
+        field: 'userName',
+        value: userName
+      });
+    }
+  }
+
   const user = await User.create({
     firstName,
     lastName,
@@ -39,42 +53,32 @@ export const registerUser = async ({
 };
 
 export const loginUser = async ({ email, password }) => {
-  try {
-    const checkEmail = email.toLowerCase();
+  const checkEmail = email.toLowerCase();
 
-    const user = await User.findOne({ email: checkEmail });
-    if (!user) {
-      return { error: true, message: 'Invalid credentials: user not found.' };
-    }
-
-    if (!user.isEmailVerified) {
-      return { error: true, message: 'Please verify your email address.' };
-    }
-
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-
-    if (!isMatch) {
-      return {
-        error: true,
-        message: 'Invalid credentials: incorrect password.'
-      };
-    }
-
-    const { passwordHash, ...userData } = user.toObject?.() ?? user.toJSON();
-
-    return {
-      error: false,
-      userData,
-      token: generateToken(user._id, user?.role)
-    };
-  } catch (err) {
-    console.error('Login error:', err);
-    return {
-      error: true,
-      message: 'Internal server error',
-      details: err.message
-    };
+  const user = await User.findOne({ email: checkEmail });
+  if (!user) {
+    throw createError.unauthorized('Invalid credentials: user not found');
   }
+
+  if (!user.isEmailVerified) {
+    throw createError.unauthorized(
+      'Please verify your email address before logging in'
+    );
+  }
+
+  const isMatch = await bcrypt.compare(password, user.passwordHash);
+
+  if (!isMatch) {
+    throw createError.unauthorized('Invalid credentials: incorrect password');
+  }
+
+  const { passwordHash, ...userData } = user.toObject?.() ?? user.toJSON();
+
+  return {
+    error: false,
+    userData,
+    token: generateToken(user._id, user?.role)
+  };
 };
 
 export const forgetUserPassword = async (req, res) => {
@@ -133,8 +137,26 @@ export const updateUserPassword = async (req, res) => {
 };
 
 export const verifyEmail = async (req, res) => {
-  await verifyUserEmail(req, res);
-  return res.status(200).json({ message: 'Email verified successfully!' });
+  const { token, id } = req.query;
+
+  const user = await User.findOne({
+    _id: id
+  });
+
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid or expired token'
+    });
+  }
+
+  user.isEmailVerified = true;
+  await user.save();
+
+  return res.status(200).json({
+    success: true,
+    message: 'Email verified successfully!'
+  });
 };
 
 export const isReusedPassword = async (newPassword, user) => {

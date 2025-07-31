@@ -1,6 +1,6 @@
 import { validationResult } from 'express-validator';
 import { registerUser, loginUser } from '../services/authService.js';
-
+import User from '../src/models/User.js';
 export const register = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty())

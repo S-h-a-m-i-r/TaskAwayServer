@@ -1,0 +1,67 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Launch Chrome",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://localhost:5173",
+        "webRoot": "${workspaceFolder}/src",
+        "sourceMapPathOverrides": {
+          "webpack:///src/*": "${webRoot}/*",
+          "vite:///src/*": "${webRoot}/*"
+        },
+        "skipFiles": [
+          "<node_internals>/**",
+          "**/node_modules/**"
+        ],
+        "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile"
+      },
+      {
+        "name": "Attach to Chrome (Existing Window)",
+        "type": "chrome",
+        "request": "attach",
+        "port": 9222,
+        "webRoot": "${workspaceFolder}/src",
+        "sourceMapPathOverrides": {
+          "webpack:///src/*": "${webRoot}/*",
+          "vite:///src/*": "${webRoot}/*"
+        },
+        "skipFiles": [
+          "<node_internals>/**",
+          "**/node_modules/**"
+        ]
+      },
+      {
+        "name": "Attach to Chrome (Auto Port)",
+        "type": "chrome",
+        "request": "attach",
+        "port": 9222,
+        "webRoot": "${workspaceFolder}/src",
+        "sourceMapPathOverrides": {
+          "webpack:///src/*": "${webRoot}/*",
+          "vite:///src/*": "${webRoot}/*"
+        },
+        "skipFiles": [
+          "<node_internals>/**",
+          "**/node_modules/**"
+        ],
+        "timeout": 30000
+      },
+      {
+        "name": "Launch Edge",
+        "type": "msedge",
+        "request": "launch",
+        "url": "http://localhost:5173",
+        "webRoot": "${workspaceFolder}/src",
+        "sourceMapPathOverrides": {
+          "webpack:///src/*": "${webRoot}/*",
+          "vite:///src/*": "${webRoot}/*"
+        },
+        "skipFiles": [
+          "<node_internals>/**",
+          "**/node_modules/**"
+        ]
+      }
+    ]
+  } 

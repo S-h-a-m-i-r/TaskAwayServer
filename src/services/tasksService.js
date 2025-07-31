@@ -219,7 +219,7 @@ export async function listTasksService(query, user) {
     .populate('assignedTo', 'name email')
     .sort({ [sortBy]: order === 'desc' ? -1 : 1 });
 
-  return { success: true, data: tasks };
+  return { success: true, tasks: tasks };
 }
 
 export async function determineTaskCredits(description) {

@@ -100,6 +100,6 @@ export const deleteTask = async (req, res, next) => {
         message: 'Task list fetched Successfully'
       });
     } catch (err) {
-        next(err);
+      next(err);
     }
   }
