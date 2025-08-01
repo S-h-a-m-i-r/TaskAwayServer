@@ -3,8 +3,10 @@ import fs from 'fs';
 import path from 'path';
 import handlebars from 'handlebars';
 import emailConfig from '../config/email.js';
-import User from '../models/Users.js';
+import User from '../models/User.js';
+
 const transporter = nodemailer.createTransport(emailConfig);
+
 export const verifyUserEmail = async (req, res) => {
   const { token, id } = req.query;
 
@@ -23,19 +25,28 @@ export const verifyUserEmail = async (req, res) => {
 };
 
 export const sendEmail = async (to, subject, templateName, templateData) => {
-  // 2. Load and compile template
-  const templatePath = path.resolve('src/templates', `${templateName}.hbs`);
-  const source = fs.readFileSync(templatePath, 'utf8');
-  const compiledTemplate = handlebars.compile(source);
-  const html = compiledTemplate(templateData);
+  try {
+    // 2. Load and compile template
+    const templatePath = path.resolve('src/templates', `${templateName}.hbs`);
+    const source = fs.readFileSync(templatePath, 'utf8');
+    const compiledTemplate = handlebars.compile(source);
+    const html = compiledTemplate(templateData);
 
-  // 3. Send email
-  const mailOptions = {
-    from: process.env.EMAIL_FROM || 'no-reply@example.com',
-    to,
-    subject,
-    html
-  };
-  const info = await transporter.sendMail(mailOptions);
-  return info;
+    // 3. Send email
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || 'no-reply@example.com',
+      to,
+      subject,
+      html
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', info.messageId);
+    return info;
+  } catch (error) {
+    console.error('Email sending failed:', error.message);
+    // Don't throw error - just log it and continue
+    // This prevents registration from failing due to email issues
+    return { error: true, message: error.message };
+  }
 };
