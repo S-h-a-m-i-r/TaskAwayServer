@@ -19,10 +19,15 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin:
-      process.env.NODE_ENV === 'production'
-        ? process.env.FRONTEND_BASE_URL || 'https://your-frontend-domain.com'
-        : 'http://localhost:5173',
+    origin: [
+      // Development
+      'http://localhost:5173',
+      // Production - add all your Vercel domains
+      'https://task-it-git-main-shamir1.vercel.app',
+      'https://task-it-kappa.vercel.app',
+      // Add any other domains you might use
+      process.env.FRONTEND_BASE_URL
+    ].filter(Boolean), // Remove any undefined values
     methods: ['GET', 'POST']
   }
 });
@@ -30,7 +35,19 @@ const io = new Server(server, {
 connectDB();
 
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      // Development
+      'http://localhost:5173',
+      // Production - add all your Vercel domains
+      'https://task-it-git-main-shamir1.vercel.app',
+      'https://task-it-kappa.vercel.app',
+      // Add any other domains you might use
+      process.env.FRONTEND_BASE_URL
+    ].filter(Boolean)
+  })
+);
 app.use(express.json());
 app.use(morgan('dev'));
 
@@ -55,9 +72,7 @@ io.use(async (socket, next) => {
 
 // Socket.IO connection handler
 io.on('connection', (socket) => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`User connected: ${socket.user._id}`);
-  }
+  console.log(`User connected: ${socket.user._id}`);
 
   // Join task chat room
   socket.on('joinTaskChat', async (taskId) => {
