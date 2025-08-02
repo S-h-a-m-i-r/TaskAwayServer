@@ -1,5 +1,5 @@
 import express from 'express';
-import { body } from 'express-validator';
+// import { body } from 'express-validator';
 import {
   getAllUsers,
   getUserById,
@@ -11,6 +11,11 @@ import {
   getUsersByDateRange,
   getUserStats
 } from '../controllers/usersController.js';
+// import {
+//   updatePaymentMethod,
+//   removePaymentMethod
+// } from '../controllers/authController.js';
+// import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -40,6 +45,10 @@ router.get('/email/:email', getUserByEmail);
 
 // Get user by username
 router.get('/username/:userName', getUserByUsername);
+
+// Payment method routes (protected)
+// router.put('/payment-method', auth, updatePaymentMethod);
+// router.delete('/payment-method', auth, removePaymentMethod);
 
 // router.post(
 //   '/addUser',

@@ -23,7 +23,7 @@ export const viewTask = async (req, res, next) => {
   try {
     const { taskId } = req.params;
 
-    const result = await viewTaskService(taskId);
+    const result = await viewTaskService(taskId, req.user || null);
     res.status(200).json({
       ...result,
       message: 'Task retrieved Successfully'

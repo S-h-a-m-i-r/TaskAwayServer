@@ -13,8 +13,10 @@ export const registerUser = async ({
   email,
   password,
   phone,
-  planType
+  planType,
+  paymentMethod
 }) => {
+  console.log('Received paymentMethod in registerUser:', paymentMethod);
   const userExists = await User.findOne({ email });
   if (userExists) {
     throw createError.conflict('Email already exists', {
@@ -25,9 +27,9 @@ export const registerUser = async ({
 
   // Check if username already exists (only if username is provided)
   if (userName) {
-    const existingUser = await User.findOne({ userName });
-    if (existingUser) {
-      throw createError.conflict('Username already exists', {
+    const userCount = await User.countDocuments({ userName });
+    if (userCount >= 2) {
+      throw createError.conflict('Username already taken', {
         field: 'userName',
         value: userName
       });
@@ -41,13 +43,16 @@ export const registerUser = async ({
     email,
     passwordHash: password,
     phone,
-    planType
+    planType,
+    paymentMethod
   });
-  await user.save();
+  console.log('the user after creation:', user);
+  console.log('paymentMethod in created user:', user.paymentMethod);
   return {
     _id: user._id,
     userName: user?.userName,
     email: user?.email,
+    paymentMethod: user?.paymentMethod,
     token: generateVerificationToken()
   };
 };

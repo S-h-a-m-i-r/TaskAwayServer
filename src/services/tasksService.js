@@ -79,7 +79,7 @@ export async function createTaskService(taskData, files, user) {
   }
 }
 
-export async function viewTaskService(taskId) {
+export async function viewTaskService(taskId, user = null) {
   if (!taskId) {
     const error = new Error('Task ID is required');
     error.status = 400;
@@ -93,11 +93,31 @@ export async function viewTaskService(taskId) {
     error.status = 404;
     throw error;
   }
-  const messages = await Message.find({ taskId })
-  .populate('senderId', 'name email')
-  .sort({ timestamp: 1 }); 
 
-  return { success: true, data: { task, messages } };
+  const messages = await Message.find({ taskId })
+    .populate('senderId', 'name email')
+    .sort({ timestamp: 1 });
+
+  // Determine if current user is the assignee
+  const isAssignee =
+    user &&
+    task.assignedTo &&
+    task.assignedTo._id.toString() === user._id.toString();
+  const isOwner = user && task.createdBy.toString() === user._id.toString();
+
+  return {
+    success: true,
+    data: {
+      task,
+      messages,
+      canChat: isAssignee || isOwner, // Allow chat if user is assignee or owner
+      userRole: {
+        isAssignee,
+        isOwner,
+        isAssigned: !!task.assignedTo
+      }
+    }
+  };
 }
 
 

@@ -18,9 +18,7 @@ const userSchema = new mongoose.Schema(
     userName: {
       type: String,
       lowercase: true,
-      trim: true,
-      unique: true,
-      sparse: true
+      trim: true
     },
     email: {
       type: String,
@@ -54,6 +52,36 @@ const userSchema = new mongoose.Schema(
     lockedUntil: {
       type: Date,
       default: null
+    },
+    paymentMethod: {
+      paymentMethodId: {
+        type: String,
+        default: null
+      },
+      cardLast4: {
+        type: String,
+        default: null
+      },
+      cardBrand: {
+        type: String,
+        default: null
+      },
+      cardExpMonth: {
+        type: Number,
+        default: null
+      },
+      cardExpYear: {
+        type: Number,
+        default: null
+      },
+      cardFunding: {
+        type: String,
+        default: null
+      },
+      token: {
+        type: String,
+        default: null
+      }
     }
   },
   {
@@ -71,6 +99,34 @@ userSchema.pre('save', async function (next) {
 
 userSchema.methods.comparePassword = function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.passwordHash);
+};
+
+// Method to update payment method
+userSchema.methods.updatePaymentMethod = function (paymentMethodData) {
+  this.paymentMethod = {
+    paymentMethodId: paymentMethodData.paymentMethodId || null,
+    cardLast4: paymentMethodData.cardLast4 || null,
+    cardBrand: paymentMethodData.cardBrand || null,
+    cardExpMonth: paymentMethodData.cardExpMonth || null,
+    cardExpYear: paymentMethodData.cardExpYear || null,
+    cardFunding: paymentMethodData.cardFunding || null,
+    token: paymentMethodData.token || null
+  };
+  return this.save();
+};
+
+// Method to remove payment method
+userSchema.methods.removePaymentMethod = function () {
+  this.paymentMethod = {
+    paymentMethodId: null,
+    cardLast4: null,
+    cardBrand: null,
+    cardExpMonth: null,
+    cardExpYear: null,
+    cardFunding: null,
+    token: null
+  };
+  return this.save();
 };
 
 const User = mongoose.model('User', userSchema);
