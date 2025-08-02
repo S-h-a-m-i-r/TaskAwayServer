@@ -41,6 +41,45 @@ export const validateRegister = [
     .matches(/[^A-Za-z0-9]/)
     .withMessage('Password must contain at least one special character'),
 
+  // Optional payment method validation
+  body('paymentMethod.paymentMethodId')
+    .optional()
+    .isString()
+    .withMessage('Payment method ID must be a string'),
+
+  body('paymentMethod.cardLast4')
+    .optional()
+    .isString()
+    .isLength({ min: 4, max: 4 })
+    .withMessage('Card last 4 digits must be exactly 4 characters'),
+
+  body('paymentMethod.cardBrand')
+    .optional()
+    .isString()
+    .isIn(['visa', 'mastercard', 'amex', 'discover'])
+    .withMessage('Card brand must be one of: visa, mastercard, amex, discover'),
+
+  body('paymentMethod.cardExpMonth')
+    .optional()
+    .isInt({ min: 1, max: 12 })
+    .withMessage('Card expiration month must be between 1 and 12'),
+
+  body('paymentMethod.cardExpYear')
+    .optional()
+    .isInt({ min: new Date().getFullYear() })
+    .withMessage('Card expiration year must be current year or later'),
+
+  body('paymentMethod.cardFunding')
+    .optional()
+    .isString()
+    .isIn(['credit', 'debit', 'prepaid'])
+    .withMessage('Card funding type must be one of: credit, debit, prepaid'),
+
+  body('paymentMethod.token')
+    .optional()
+    .isString()
+    .withMessage('Payment token must be a string'),
+
   (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

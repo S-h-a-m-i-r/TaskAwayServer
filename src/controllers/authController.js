@@ -15,6 +15,8 @@ export const register = async (req, res, next) => {
     return res.status(400).json({ errors: errors.array() });
 
   try {
+    console.log('the request body', req.body);
+    console.log('paymentMethod from request body:', req.body.paymentMethod);
     const user = await registerUser(req.body);
 
     // Try to send verification email, but don't fail registration if email fails
