@@ -10,13 +10,16 @@ export async function createTaskService(taskData, files, user) {
       throw new Error('Task data and user information are required');
     }
     console.log('Creating task with data:', taskData, 'and user:', user.plan);
+    let creditCost = 1; // Default value
+    
     if (user.planType === Plan['10_CREDITS']) {
-      const creditCost = await determineTaskCredits(taskData.description || '');
+      creditCost = await determineTaskCredits(taskData.description || '');
       console.log(`Credit cost determined: ${creditCost}`);
-      // if (user.credits < creditCost) {
-      //   throw new AppError(`Insufficient credits: ${creditCost} required`, 403);
-      // }
-      taskData.creditCost = creditCost; 
+      
+      // Validate that creditCost is within allowed enum values
+      if (![1, 2].includes(creditCost)) {
+        throw new Error(`Invalid credit cost: ${creditCost}. Must be 1 or 2.`);
+      }
     }
 
     // Handle file uploads to S3
@@ -86,7 +89,9 @@ export async function viewTaskService(taskId, user = null) {
     throw error;
   }
 
-  const task = await Task.findById(taskId).populate('assignedTo', 'name email');
+  const task = await Task.findById(taskId)
+  .populate('assignedTo', 'firstName lastName email role')
+  .populate('createdBy', 'firstName lastName email planType');
 
   if (!task) {
     const error = new Error('Task not found');
