@@ -95,15 +95,35 @@ export const forgetUserPassword = async (req, res) => {
   }
 
   const token = generateVerificationToken();
-  const resetUrl = `${process.env.FRONTEND_BASE_URL}/forgot-password/new-password?token=${token}&id=${user._id}`;
-  await sendEmail(user.email, 'Reset your password', 'reset-password', {
-    name: user.firstName,
-    resetUrl
-  });
+  const tokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
 
-  return res
-    .status(200)
-    .json({ token: token, message: 'Password reset email sent' });
+  // Save the reset token and expiry to the user
+  user.resetPasswordToken = token;
+  user.resetPasswordExpires = tokenExpiry;
+  await user.save();
+
+  const resetUrl = `${process.env.FRONTEND_BASE_URL}/forgot-password/new-password?token=${token}&id=${user._id}`;
+
+  try {
+    await sendEmail(user.email, 'Reset your password', 'reset-password', {
+      name: user.firstName,
+      resetUrl
+    });
+
+    return res
+      .status(200)
+      .json({ message: 'Password reset email sent successfully' });
+  } catch (error) {
+    // If email fails, remove the token
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    console.error('Email sending failed:', error);
+    return res
+      .status(500)
+      .json({ message: 'Failed to send reset email. Please try again.' });
+  }
 };
 
 export const updateUserPassword = async (req, res) => {
@@ -183,21 +203,31 @@ export const isReusedPassword = async (newPassword, user) => {
 };
 
 export const resetUserPassword = async (req, res) => {
-  const { id } = req.query;
+  const { id, token } = req.query;
   const { new_password } = req.body;
 
+  // Validate required fields
+  if (!new_password) {
+    throw createError.badRequest('New password is required');
+  }
+
+  if (typeof new_password !== 'string' || new_password.length < 6) {
+    throw createError.badRequest('Password must be at least 6 characters long');
+  }
+
   const user = await User.findOne({
-    _id: id
+    _id: id,
+    resetPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() }
   });
 
   if (!user) {
-    return res.status(400).json({ message: 'Invalid or expired token' });
+    throw createError.badRequest('Invalid or expired token');
   }
+
   const isSameAsLast3Passwords = await isReusedPassword(new_password, user);
   if (isSameAsLast3Passwords) {
-    return res
-      .status(400)
-      .json({ error: 'You cannot reuse your last 3 passwords.' });
+    throw createError.badRequest('You cannot reuse your last 3 passwords.');
   }
 
   const hashed = await bcrypt.hash(new_password, 10);
@@ -207,7 +237,11 @@ export const resetUserPassword = async (req, res) => {
   user.secondLastPassword = user.lastPassword;
   user.lastPassword = user.passwordHash;
 
+  // Clear the reset token after successful password reset
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpires = undefined;
+
   await user.save();
 
-  return res.status(200).json({ message: 'Password updated successfully.' });
+  return { message: 'Password updated successfully.' };
 };
