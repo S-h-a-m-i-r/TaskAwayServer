@@ -3,7 +3,7 @@ import { query } from 'express-validator';
 export const validateTaskQuery = [
   query('status')
     .optional()
-    .isIn(['Submitted', 'InProgress', 'Completed', 'Closed', 'Pending'])
+    .isIn(['Submitted', 'InProgress', 'Completed', 'Closed'])
     .withMessage('Invalid status'),
   query('title')
     .optional()

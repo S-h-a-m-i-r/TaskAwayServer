@@ -9,12 +9,10 @@ export async function createTaskService(taskData, files, user) {
     if (!taskData || !user) {
       throw new Error('Task data and user information are required');
     }
-    console.log('Creating task with data:', taskData, 'and user:', user.plan);
     let creditCost = 1; // Default value
     
     if (user.planType === Plan['10_CREDITS']) {
       creditCost = await determineTaskCredits(taskData.description || '');
-      console.log(`Credit cost determined: ${creditCost}`);
       
       // Validate that creditCost is within allowed enum values
       if (![1, 2].includes(creditCost)) {
@@ -61,6 +59,14 @@ export async function createTaskService(taskData, files, user) {
 
     //   taskData.files = uploadedFiles;
     // }
+
+    // Validate status if provided
+    if (taskData.status) {
+      const validStatuses = ['Submitted', 'InProgress', 'Completed', 'Closed'];
+      if (!validStatuses.includes(taskData.status)) {
+        throw new Error(`Invalid status: ${taskData.status}. Valid statuses are: ${validStatuses.join(', ')}`);
+      }
+    }
 
     // Create task
     taskData.createdBy = user._id;
@@ -147,6 +153,7 @@ export async function taskAssignService(taskId, userId) {
   } 
     task.assignedTo = user?.id;
     task.assignedToRole = user?.role;
+    task.status = 'InProgress';
     await task.save();
     return { success: true, data: task };
   
@@ -203,6 +210,16 @@ export async function updateTaskService(taskId, updateData) {
     throw error;
   }
 
+  // Validate and normalize status if it's being updated
+  if (updateData.status) {
+    const validStatuses = ['Submitted', 'InProgress', 'Completed', 'Closed'];
+    if (!validStatuses.includes(updateData.status)) {
+      const error = new Error(`Invalid status: ${updateData.status}. Valid statuses are: ${validStatuses.join(', ')}`);
+      error.status = 400;
+      throw error;
+    }
+  }
+
   const task = await Task.findByIdAndUpdate(taskId, updateData, { new: true });
   if (!task) {
     const error = new Error('Task not found');
@@ -237,11 +254,12 @@ export async function listTasksService(query, user) {
     filter.status = status;
   }
   if (title) {
-    filter.title = { $regex: title, $options: 'i' }; // Case-insensitive search
+    filter.title = { $regex: title, $options: 'i' }; 
   }
 
   const tasks = await Task.find(filter)
-    .populate('assignedTo', 'name email')
+    .populate('assignedTo', 'firstName lastName userName email role')
+    .populate('createdBy', 'firstName lastName userName email role')
     .sort({ [sortBy]: order === 'desc' ? -1 : 1 });
 
   return { success: true, tasks: tasks };

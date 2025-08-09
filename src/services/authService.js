@@ -16,7 +16,6 @@ export const registerUser = async ({
   planType,
   paymentMethod
 }) => {
-  console.log('Received paymentMethod in registerUser:', paymentMethod);
   const userExists = await User.findOne({ email });
   if (userExists) {
     throw createError.conflict('Email already exists', {
@@ -46,8 +45,6 @@ export const registerUser = async ({
     planType,
     paymentMethod
   });
-  console.log('the user after creation:', user);
-  console.log('paymentMethod in created user:', user.paymentMethod);
   return {
     _id: user._id,
     userName: user?.userName,
