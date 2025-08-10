@@ -80,7 +80,7 @@ export async function createTaskService(taskData, files, user) {
     //   await user.save();
     // }
 
-    return { success: true, data: task };
+    return { success: true, task: { _id: task._id, message: 'Task created Successfully' } };
   } catch (err) {
     err.status = err.status || 400;
     err.message = err.message || 'Failed to create task';

@@ -2,12 +2,25 @@ import mongoose from 'mongoose';
 
 const fileSchema = new mongoose.Schema({
   filename: { type: String, required: true },
+  fileKey: { type: String, required: true }, // S3 object key (e.g., temp/1234567890-file.pdf)
   url: { type: String, required: true }, // Stores S3 URL (e.g., https://taskaway-bucket.s3.amazonaws.com/tasks/12345-file.pdf)
   size: { type: Number, required: true }, // In bytes
   type: { 
     type: String, 
     required: false,
-    enum: ['application/pdf', 'image/jpeg', 'image/png', 'text/plain'], // Restrict file types (adjust as needed)
+    enum: [
+      'application/pdf',
+      'image/jpeg', 
+      'image/jpg',
+      'image/png', 
+      'image/webp',
+      'image/gif',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ], // Restrict file types (adjust as needed)
   },
   uploadedAt: { type: Date, default: Date.now }
 });
