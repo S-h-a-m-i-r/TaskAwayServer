@@ -1,7 +1,8 @@
 import express from 'express';
 import authRoutes from './authRoutes.js';
 import userRoutes from './userRoutes.js';
-import tasksRoutes from './tasksRoutes.js'
+import tasksRoutes from './tasksRoutes.js';
+import fileRoutes from './fileRoutes.js';
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -65,5 +66,6 @@ router.get('/db-status', (req, res) => {
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/tasks', tasksRoutes);
+router.use('/files', fileRoutes);
 
 export default router;
