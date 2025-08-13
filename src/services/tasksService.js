@@ -16,7 +16,7 @@ export async function createTaskService(taskData, files, user) {
       
       // Validate that creditCost is within allowed enum values
       if (![1, 2].includes(creditCost)) {
-        throw new Error(`Invalid credit cost: ${creditCost}. Must be 1 or 2.`);
+        throw new Error(`Invalid credits cost: ${creditCost}. Must be 1 or 2.`);
       }
     }
 

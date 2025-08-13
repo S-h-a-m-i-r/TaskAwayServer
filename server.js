@@ -180,10 +180,35 @@ io.on('connection', (socket) => {
 app.use('/api', routes);
 
 app.use(errorHandler);
+
+// Startup validation
+console.log('🔍 Validating startup requirements...');
+
+// Check critical environment variables
+const requiredEnvVars = ['MONGO_URI', 'JWT_SECRET'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  console.error('❌ Missing required environment variables:', missingEnvVars);
+  console.error('Please check your .env file or environment configuration');
+  process.exit(1);
+}
+
+console.log('✅ Environment variables validated');
+
+// Check MongoDB connection before starting server
+try {
+  await connectDB();
+  console.log('✅ MongoDB connection validated');
+} catch (error) {
+  console.error('❌ MongoDB connection failed:', error.message);
+  process.exit(1);
+}
+
 const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || 'http://localhost';
 
-// Enhanced server startup logging
+// Enhanced server startup logging with error handling
 server.listen(PORT, () => {
   console.log('🚀 TaskAway Server Started Successfully!');
   console.log(`📍 Server URL: ${HOST}:${PORT}`);
@@ -192,4 +217,35 @@ server.listen(PORT, () => {
   console.log(`🗄️  DB Status: ${HOST}:${PORT}/api/db-status`);
   console.log(`⏰ Started at: ${new Date().toISOString()}`);
   console.log('='.repeat(50));
+}).on('error', (error) => {
+  console.error('❌ Server failed to start:', error);
+  process.exit(1);
+});
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('🔄 SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🔄 SIGINT received, shutting down gracefully...');
+  server.close(() => {
+    console.log('✅ Server closed');
+    process.exit(0);
+  });
+});
+
+// Unhandled error handling
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
 });

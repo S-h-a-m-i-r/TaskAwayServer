@@ -17,6 +17,14 @@ router.get('/health', (req, res) => {
     3: 'disconnecting'
   };
 
+  // Check AWS credentials
+  const awsStatus = {
+    accessKey: process.env.AWS_ACCESS_KEY ? 'SET' : 'MISSING',
+    secretKey: process.env.AWS_SECRET_KEY ? 'SET' : 'MISSING',
+    region: process.env.AWS_REGION || 'NOT_SET',
+    bucket: process.env.AWS_BUCKET_NAME || 'NOT_SET'
+  };
+
   const healthStatus = {
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -25,14 +33,25 @@ router.get('/health', (req, res) => {
       status: dbStatusText[dbStatus] || 'unknown',
       readyState: dbStatus
     },
+    aws: awsStatus,
     environment: process.env.NODE_ENV || 'development',
     version: process.version
   };
 
-  // If database is not connected, return error status
+  // Check for critical failures
+  const criticalIssues = [];
+  
   if (dbStatus !== 1) {
+    criticalIssues.push('Database connection is not ready');
+  }
+  
+  if (!process.env.AWS_ACCESS_KEY || !process.env.AWS_SECRET_KEY) {
+    criticalIssues.push('AWS credentials are missing');
+  }
+
+  if (criticalIssues.length > 0) {
     healthStatus.status = 'error';
-    healthStatus.database.error = 'Database connection is not ready';
+    healthStatus.issues = criticalIssues;
     return res.status(503).json(healthStatus);
   }
 
@@ -61,6 +80,43 @@ router.get('/db-status', (req, res) => {
   };
 
   res.status(200).json(dbInfo);
+});
+
+// AWS connectivity test endpoint
+router.get('/aws-status', async (req, res) => {
+  try {
+    const awsStatus = {
+      credentials: {
+        accessKey: process.env.AWS_ACCESS_KEY ? 'SET' : 'MISSING',
+        secretKey: process.env.AWS_SECRET_KEY ? 'SET' : 'MISSING',
+        region: process.env.AWS_REGION || 'NOT_SET',
+        bucket: process.env.AWS_BUCKET_NAME || 'NOT_SET'
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    // Test S3 connectivity if credentials are available
+    if (process.env.AWS_ACCESS_KEY && process.env.AWS_SECRET_KEY) {
+      try {
+        const { testS3Connection } = await import('../config/s3.js');
+        await testS3Connection();
+        awsStatus.s3Connection = 'SUCCESS';
+      } catch (error) {
+        awsStatus.s3Connection = 'FAILED';
+        awsStatus.s3Error = error.message;
+      }
+    } else {
+      awsStatus.s3Connection = 'SKIPPED - No credentials';
+    }
+
+    res.status(200).json(awsStatus);
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to check AWS status',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 router.use('/auth', authRoutes);
