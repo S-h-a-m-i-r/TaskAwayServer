@@ -1,0 +1,30 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - echo Installing dependencies...
+      - npm install
+      - echo Build started on `date`
+  
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Creating deployment package...
+      - zip -r TaskAwayServer.zip . -x "node_modules/*" ".git/*" ".vscode/*" "*.md" "test-*.js"
+      - echo Build completed on `date`
+  
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Deploying to Elastic Beanstalk...
+      - aws s3 cp TaskAwayServer.zip s3://$S3_BUCKET/TaskAwayServer.zip
+      - echo Deployment package uploaded to S3
+
+artifacts:
+  files:
+    - TaskAwayServer.zip
+  discard-paths: no
+  base-directory: .

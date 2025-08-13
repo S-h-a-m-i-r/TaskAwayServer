@@ -177,6 +177,40 @@ io.on('connection', (socket) => {
 });
 
 
+// Health check endpoint for Elastic Beanstalk
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV || 'development',
+    version: process.env.npm_package_version || '1.0.0'
+  });
+});
+
+// Database status endpoint
+app.get('/db-status', async (req, res) => {
+  try {
+    const dbStatus = mongoose.connection.readyState;
+    const statusMap = {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting'
+    };
+    
+    res.status(200).json({
+      database: statusMap[dbStatus] || 'unknown',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Database status check failed',
+      message: error.message
+    });
+  }
+});
+
 app.use('/api', routes);
 
 app.use(errorHandler);

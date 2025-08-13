@@ -8,7 +8,7 @@
     "dev": "nodemon server.js",
     "debug": "node --inspect-brk server.js",
     "debug-dev": "nodemon --inspect server.js",
-    "build": "echo 'No build step needed for plain Node.js'",
+    "build": "npm install --production",
     "format": "prettier --write .",
     "lint": "eslint"
   },
