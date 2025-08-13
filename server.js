@@ -180,7 +180,7 @@ io.on('connection', (socket) => {
 app.use('/api', routes);
 
 app.use(errorHandler);
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || 'http://localhost';
 
 // Enhanced server startup logging
