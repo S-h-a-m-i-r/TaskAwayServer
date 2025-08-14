@@ -8,7 +8,7 @@ dotenv.config();
 
 // Validate required environment variables
 if (!process.env.AWS_ACCESS_KEY_ID) {
-  throw new Error('AWS_ACCESS_KEY_ID_ID environment variable is required');
+  throw new Error('AWS_ACCESS_KEY_ID environment variable is required');
 }
 if (!process.env.AWS_SECRET_KEY_ID) {
   throw new Error('AWS_SECRET_ACCESS_KEY environment variable is required');

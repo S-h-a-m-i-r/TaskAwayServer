@@ -179,6 +179,10 @@ io.on('connection', (socket) => {
 
 app.use('/api', routes);
 
+app.get('/', (req, res) => {
+  res.send('server is running!');
+});
+
 app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || 'http://localhost';
