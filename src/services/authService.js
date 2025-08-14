@@ -88,19 +88,23 @@ export const forgetUserPassword = async (req, res) => {
   const user = await User.findOne({ email: email.toLowerCase() });
 
   if (!user) {
-    return res.status(404).json({ message: 'User not found' });
+    throw createError.notFound('User not found');
   }
 
   const token = generateVerificationToken();
-  const resetUrl = `${process.env.FRONTEND_BASE_URL}/forgot-password/new-password?token=${token}&id=${user._id}`;
+  const resetUrl = `${process.env.FRONTEND_BASE_URL}/forgot-password/new-password?token=${token}`;
+  
+  // Store the reset token and expiration in the database
+  user.passwordResetToken = token;
+  user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiration
+  await user.save();
+  
   await sendEmail(user.email, 'Reset your password', 'reset-password', {
     name: user.firstName,
     resetUrl
   });
 
-  return res
-    .status(200)
-    .json({ token: token, message: 'Password reset email sent' });
+  return { message: 'Password reset email sent' };
 };
 
 export const updateUserPassword = async (req, res) => {
@@ -180,31 +184,47 @@ export const isReusedPassword = async (newPassword, user) => {
 };
 
 export const resetUserPassword = async (req, res) => {
-  const { id } = req.query;
-  const { new_password } = req.body;
+  const { token } = req.query; 
+  const { password } = req.body;
 
+  if (!token) {
+    throw createError.badRequest('Reset token is required');
+  }
+
+  // Find user by token only - no need for user ID
   const user = await User.findOne({
-    _id: id
+    passwordResetToken: token,
+    passwordResetExpires: { $gt: Date.now() }
   });
 
   if (!user) {
-    return res.status(400).json({ message: 'Invalid or expired token' });
+    throw createError.badRequest('Invalid or expired reset token');
   }
-  const isSameAsLast3Passwords = await isReusedPassword(new_password, user);
+  const hashed = await bcrypt.hash(password, 10);
+  // Check if new password is not the same as last 3 passwords
+  const isSameAsLast3Passwords = await isReusedPassword(password, user);
   if (isSameAsLast3Passwords) {
-    return res
-      .status(400)
-      .json({ error: 'You cannot reuse your last 3 passwords.' });
+    throw createError.badRequest('You cannot reuse your last 3 passwords.');
   }
 
-  const hashed = await bcrypt.hash(new_password, 10);
-  user.passwordHash = hashed;
+  // 1. FIRST save the current password to history
+  user.thirdLastPassword = user.secondLastPassword;     // Move down
+  user.secondLastPassword = user.lastPassword;          // Move down  
+  user.lastPassword = user.passwordHash;                // Save current as previous
 
-  user.thirdLastPassword = user.secondLastPassword;
-  user.secondLastPassword = user.lastPassword;
-  user.lastPassword = user.passwordHash;
+  // 2. THEN set the new password
+  
+  user.passwordHash = hashed;  // Set new current password
+  
+  // Clear the reset token and expiration after successful reset
+  user.passwordResetToken = null;
+  user.passwordResetExpires = null;
 
   await user.save();
 
-  return res.status(200).json({ message: 'Password updated successfully.' });
+  // Return data instead of sending response
+  return {
+    success: true,
+    message: 'Password updated successfully.'
+  };
 };

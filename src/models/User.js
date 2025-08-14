@@ -49,6 +49,14 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    passwordResetToken: {
+      type: String,
+      default: null
+    },
+    passwordResetExpires: {
+      type: Date,
+      default: null
+    },
     lockedUntil: {
       type: Date,
       default: null
@@ -89,13 +97,13 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('passwordHash')) return next();
-  const hashedPassword = await bcrypt.hash(this.passwordHash, 10);
-  this.passwordHash = hashedPassword;
-
-  next();
-});
+// Remove the pre-save hook that causes double hashing
+// userSchema.pre('save', async function (next) {
+//   if (!this.isModified('passwordHash')) return next();
+//   const hashedPassword = await bcrypt.hash(this.passwordHash, 10);
+//   this.passwordHash = hashedPassword;
+//   next();
+// });
 
 userSchema.methods.comparePassword = function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.passwordHash);
