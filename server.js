@@ -39,13 +39,7 @@ connectDB();
 // app.use(helmet());
 //on suggestion from copiltot
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"], // allow inline scripts
-      styleSrc: ["'self'", "'unsafe-inline'"],
-    }
-  }
+  contentSecurityPolicy: false
 }));
 
 app.use(
