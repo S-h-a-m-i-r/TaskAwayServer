@@ -24,6 +24,7 @@ const io = new Server(server, {
       // Development
       'http://localhost:5173',
       'http://13.53.134.0:5173',
+      'http://13.53.134.0:5000',
       // Production - add all your Vercel domains
       'https://task-it-git-main-shamir1.vercel.app',
       'https://task-it-kappa.vercel.app',
@@ -47,7 +48,8 @@ app.use(
     origin: [
       // Development
       'http://localhost:5173',
-            'http://13.53.134.0:5173',
+      'http://13.53.134.0:5173',
+      'http://13.53.134.0:5000',
       // Production - add all your Vercel domains
       'https://task-it-git-main-shamir1.vercel.app',
       'https://task-it-kappa.vercel.app',
