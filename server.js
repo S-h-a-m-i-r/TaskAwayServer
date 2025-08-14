@@ -13,6 +13,7 @@ import http from 'http';
 import jwt from 'jsonwebtoken';
 import User from './src/models/User.js';
 import mongoose from 'mongoose';
+import path from 'path';
 
 dotenv.config();
 const app = express();
@@ -215,8 +216,15 @@ app.get('/api/db-status', async (req, res) => {
 
 app.use('/api', routes);
 
-app.get('/', (req, res) => {
-  res.send('server is running!');
+// Serve static files from the frontend dist folder
+const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, 'dist')));
+
+// Fallback: serve index.html for any non-API route (SPA support)
+app.get('*', (req, res) => {
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  }
 });
 
 app.use(errorHandler);
