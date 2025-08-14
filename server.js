@@ -36,7 +36,18 @@ const io = new Server(server, {
 
 connectDB();
 
-app.use(helmet());
+// app.use(helmet());
+//on suggestion from copiltot
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // allow inline scripts
+      styleSrc: ["'self'", "'unsafe-inline'"],
+    }
+  }
+}));
+
 app.use(
   cors({
     origin: [
