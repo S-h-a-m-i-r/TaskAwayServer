@@ -7,6 +7,7 @@ import {
   resetPassword
 } from '../controllers/authController.js';
 import { validateRegister } from '../middleware/validateRegister.js';
+import { validatePasswordReset } from '../middleware/validatePasswordReset.js';
 import { verifyEmail } from '../services/authService.js';
 
 const router = express.Router();
@@ -20,7 +21,7 @@ router.post(
   forgotPassword
 );
 
-router.post('/reset-password', resetPassword);
+router.post('/reset-password', validatePasswordReset, resetPassword);
 router.get('/verify-email', verifyEmail);
 
 export default router;

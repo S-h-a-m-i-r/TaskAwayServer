@@ -68,7 +68,7 @@ export const login = async (req, res, next) => {
   }
 };
 
-export const updatePassword = async (req, res) => {
+export const updatePassword = async (req, res, next) => {
   try {
     const result = await updateUserPassword(req, res);
     res.status(201).json(result);
@@ -77,7 +77,7 @@ export const updatePassword = async (req, res) => {
   }
 };
 
-export const forgotPassword = async (req, res) => {
+export const forgotPassword = async (req, res, next) => {
   try {
     const result = await forgetUserPassword(req, res);
     res.status(200).json(result);
@@ -86,9 +86,10 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
-export const resetPassword = async (req, res) => {
+export const resetPassword = async (req, res, next) => {
   try {
-    await resetUserPassword(req, res);
+    const result = await resetUserPassword(req, res);
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }
