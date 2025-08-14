@@ -220,11 +220,9 @@ app.use('/api', routes);
 const __dirname = path.resolve();
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Fallback: serve index.html for any non-API route (SPA support)
-app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-  }
+// Fallback: serve index.html for any route that does NOT start with /api
+app.get(/^\/(?!api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
 app.use(errorHandler);
