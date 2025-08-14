@@ -22,6 +22,7 @@ const io = new Server(server, {
     origin: [
       // Development
       'http://localhost:5173',
+      'http://13.53.134.0:5173',
       // Production - add all your Vercel domains
       'https://task-it-git-main-shamir1.vercel.app',
       'https://task-it-kappa.vercel.app',
@@ -40,6 +41,7 @@ app.use(
     origin: [
       // Development
       'http://localhost:5173',
+            'http://13.53.134.0:5173',
       // Production - add all your Vercel domains
       'https://task-it-git-main-shamir1.vercel.app',
       'https://task-it-kappa.vercel.app',
@@ -178,7 +180,7 @@ io.on('connection', (socket) => {
 
 
 // Health check endpoint for Elastic Beanstalk
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
@@ -189,7 +191,7 @@ app.get('/health', (req, res) => {
 });
 
 // Database status endpoint
-app.get('/db-status', async (req, res) => {
+app.get('/api/db-status', async (req, res) => {
   try {
     const dbStatus = mongoose.connection.readyState;
     const statusMap = {
