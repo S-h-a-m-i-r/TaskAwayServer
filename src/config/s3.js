@@ -8,7 +8,7 @@ dotenv.config();
 
 // Validate required environment variables
 if (!process.env.AWS_ACCESS_KEY_ID) {
-  throw new Error('AWS_ACCESS_KEY_ID_ID environment variable is required');
+  throw new Error('AWS_ACCESS_KEY_ID environment variable is required');
 }
 if (!process.env.AWS_SECRET_KEY_ID) {
   throw new Error('AWS_SECRET_ACCESS_KEY environment variable is required');
@@ -32,7 +32,7 @@ const BUCKET_NAME = process.env.AWS_BUCKET_NAME;
 // Debug: Log environment variables (remove in production)
 console.log('S3 Config Debug:', {
   region: process.env.AWS_REGION || 'us-east-1',
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID_ID ? '***SET***' : 'MISSING',
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID ? '***SET***' : 'MISSING',
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ? '***SET***' : 'MISSING',
   bucketName: BUCKET_NAME || 'MISSING'
 });

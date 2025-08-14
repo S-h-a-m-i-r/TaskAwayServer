@@ -213,6 +213,10 @@ app.get('/db-status', async (req, res) => {
 
 app.use('/api', routes);
 
+app.get('/', (req, res) => {
+  res.send('server is running!');
+});
+
 app.use(errorHandler);
 
 // Startup validation
@@ -247,8 +251,7 @@ server.listen(PORT, () => {
   console.log('🚀 TaskAway Server Started Successfully!');
   console.log(`📍 Server URL: ${HOST}:${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📊 Health Check: ${HOST}:${PORT}/api/health`);
-  console.log(`🗄️  DB Status: ${HOST}:${PORT}/api/db-status`);
+
   console.log(`⏰ Started at: ${new Date().toISOString()}`);
   console.log('='.repeat(50));
 }).on('error', (error) => {
