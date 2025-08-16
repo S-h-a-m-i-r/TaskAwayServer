@@ -3,6 +3,7 @@ import authRoutes from './authRoutes.js';
 import userRoutes from './userRoutes.js';
 import tasksRoutes from './tasksRoutes.js';
 import fileRoutes from './fileRoutes.js';
+import teamManagementRoutes from './teamManagementRoutes.js';
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -123,5 +124,6 @@ router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/tasks', tasksRoutes);
 router.use('/files', fileRoutes);
+router.use('/team', teamManagementRoutes);
 
 export default router;
