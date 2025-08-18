@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 
 export const addTeamMemberService = async (data) => {
     try {
-        const { firstName, lastName, userName, email, phone, role, password, isverified } = data;
+        const { firstName, lastName, userName, email, phone, role, password, isVerified } = data;
         if (!firstName || !lastName || !email || !password) {
             throw createError.validation('Missing required fields: firstName, lastName, email, and password are required');
         }
@@ -34,7 +34,7 @@ export const addTeamMemberService = async (data) => {
             phone, 
             role: role.toUpperCase(), 
             passwordHash: hashedPassword, 
-            isEmailVerified: isverified 
+            isEmailVerified: isVerified || false 
         });
 
         const userResponse = user.toObject();
