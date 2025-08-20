@@ -79,7 +79,7 @@ export const getTeamMemberByIdService = async (id) => {
 
 export const updateTeamMemberService = async (data, id) => {
     try {
-        const { firstName, lastName, userName, email, phone, role, password, isverified } = data;
+        const { firstName, lastName, userName, email, phone, role, password, isVerified } = data;
 
         // First, find the user by ID
         const existingUser = await User.findById(id);
@@ -125,7 +125,7 @@ export const updateTeamMemberService = async (data, id) => {
         if (password) {
             updateData.passwordHash = await bcrypt.hash(password, 10);
         }
-        if (isverified !== undefined) updateData.isverified = isverified;
+        if (isVerified !== undefined) updateData.isVerified = isVerified;
 
         // Update the user
         const updatedUser = await User.findByIdAndUpdate(
