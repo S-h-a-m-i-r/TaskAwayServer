@@ -125,8 +125,7 @@ export const updateTeamMemberService = async (data, id) => {
         if (password) {
             updateData.passwordHash = await bcrypt.hash(password, 10);
         }
-        if (isVerified !== undefined) updateData.isVerified = isVerified;
-
+        if (isVerified !== undefined) updateData.isEmailVerified = isVerified;
         // Update the user
         const updatedUser = await User.findByIdAndUpdate(
             id,
