@@ -34,13 +34,13 @@ export const registerUser = async ({
       });
     }
   }
-
+  const hashedPassword = await bcrypt.hash(password, 10);
   const user = await User.create({
     firstName,
     lastName,
     userName,
     email,
-    passwordHash: password,
+    passwordHash: hashedPassword,
     phone,
     planType,
     paymentMethod
