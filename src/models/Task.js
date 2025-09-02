@@ -61,6 +61,16 @@ const taskSchema = new mongoose.Schema(
       required: true,
       default: 1
     },
+      // Recurrence-related fields
+      isRecurring: { type: Boolean, default: false },
+      recurrencePattern: {
+        type: String,
+        enum: ['Daily', 'Weekly', 'Monthly'],
+        required: false,
+      },
+      recurrenceEndDate: { type: Date, required: false, }, // when recurrence should stop
+      recurrenceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', required: false, }, 
+      dueDate: { type: Date, required: false }, 
     files: {
       type: [fileSchema],
       validate: [
