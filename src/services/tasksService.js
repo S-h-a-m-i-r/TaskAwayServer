@@ -4,7 +4,7 @@ import TaskHistory from '../models/TaskHistory.js';
 import { Plan, complexKeywords } from '../utils/utilityEnums.js';
 import Message from '../models/Message.js';
 
-export async function createTaskService(taskData, files, user) {
+export async function createTaskService(taskData, user) {
   try {
     if (!taskData || !user) {
       throw new Error('Task data and user information are required');
@@ -20,52 +20,17 @@ export async function createTaskService(taskData, files, user) {
       }
     }
 
-    // Handle file uploads to S3
-    // if (files && files.length > 0) {
-    //   if (files.length > 12) {
-    //     throw new AppError('Maximum 12 files allowed', 400);
-    //   }
-    //   const totalSize = files.reduce((acc, file) => acc + file.size, 0);
-    //   if (totalSize > 60 * 1024 * 1024) {
-    //     throw new AppError('Total file size exceeds 60MB', 400);
-    //   }
-
-      // const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'text/plain'];
-      // for (const file of files) {
-      //   if (!allowedTypes.includes(file.mimetype)) {
-      //     throw new AppError('Invalid file type. Allowed: PDF, JPEG, PNG, text', 400);
-      //   }
-      // }
-
-    //   const uploadedFiles = await Promise.all(
-    //     files.map(async (file) => {
-    //       const params = {
-    //         Bucket: process.env.AWS_S3_BUCKET,
-    //         Key: `tasks/${Date.now()}-${file.originalname}`,
-    //         Body: file.buffer,
-    //         ContentType: file.mimetype,
-    //         ACL: 'public-read' // Use signed URLs for production
-    //       };
-    //       const { Location } = await s3.upload(params).promise();
-    //       return {
-    //         filename: file.originalname,
-    //         url: Location,
-    //         size: file.size,
-    //         type: file.mimetype,
-    //         uploadedAt: new Date()
-    //       };
-    //     })
-    //   );
-
-    //   taskData.files = uploadedFiles;
-    // }
-
-    // Validate status if provided
     if (taskData.status) {
       const validStatuses = ['Submitted', 'InProgress', 'Completed', 'Closed'];
       if (!validStatuses.includes(taskData.status)) {
         throw new Error(`Invalid status: ${taskData.status}. Valid statuses are: ${validStatuses.join(', ')}`);
       }
+    }
+
+    // Calculate due date for recurring tasks if not explicitly provided
+    if (taskData.isRecurring && taskData.recurrencePattern && !taskData.dueDate) {
+      const now = new Date();
+      taskData.dueDate = calculateInitialDueDate(now, taskData.recurrencePattern);
     }
 
     // Create task
@@ -227,6 +192,45 @@ export async function updateTaskService(taskId, updateData) {
     throw error;
   }
 
+
+  if (
+    updateData.status &&
+    (updateData.status === "Closed") &&
+    task.isRecurring
+  ) {
+    const nextDueDate = calculateNextDueDate(task.dueDate, task.recurrencePattern);
+
+    // Only create new task if recurrence is still valid
+    if (nextDueDate && (!task.recurrenceEndDate || nextDueDate <= task.recurrenceEndDate)) {
+      const newTask = await Task.create({
+        title: task.title,
+        description: task.description,
+        status: "Submitted", // new task starts fresh
+        createdBy: task.createdBy,
+        assignedTo: task.assignedTo,
+        assignedToRole: task.assignedToRole,
+        creditCost: task.creditCost,
+        files: task.files,
+        isRecurring: true,
+        recurrencePattern: task.recurrencePattern,
+        recurrenceEndDate: task.recurrenceEndDate,
+        recurrenceId: task.recurrenceId || task._id,
+        dueDate: nextDueDate,
+        parentTaskId: task._id,
+      });
+
+      
+      await TaskHistory.create({
+        taskId: newTask._id,
+        currentlyAssignedUserId: newTask.assignedTo,
+        currentlyAssignedUserRole: newTask.assignedToRole,
+        isRecurringEvent: true,
+        recurrencePattern: newTask.recurrencePattern,
+        parentTaskId: task._id,
+      });
+    }
+  }
+
   return { success: true, data: task };
 }
 export async function deleteTaskService(taskId) {
@@ -269,3 +273,44 @@ export async function determineTaskCredits(description) {
   return complexKeywords.some(keyword => description.toLowerCase().includes(keyword)) ? 2 : 1;
 }
 
+
+
+function calculateNextDueDate(prevDueDate, recurrencePattern) {
+  if (!prevDueDate) return null;
+
+  const date = new Date(prevDueDate); // prevDueDate must be UTC
+
+  switch (recurrencePattern) {
+    case "Daily":
+      date.setUTCDate(date.getUTCDate() + 1);
+      break;
+    case "Weekly":
+      date.setUTCDate(date.getUTCDate() + 7);
+      break;
+    case "Monthly":
+      date.setUTCMonth(date.getUTCMonth() + 1);
+      break;
+    default:
+      return null;
+  }
+  return date;
+}
+
+function calculateInitialDueDate(now, recurrencePattern) {
+  const date = new Date(now);
+
+  switch (recurrencePattern) {
+    case "Daily":
+      date.setUTCDate(date.getUTCDate() + 1);
+      break;
+    case "Weekly":
+      date.setUTCDate(date.getUTCDate() + 7);
+      break;
+    case "Monthly":
+      date.setUTCMonth(date.getUTCMonth() + 1);
+      break;
+    default:
+      return null;
+  }
+  return date;
+}

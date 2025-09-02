@@ -9,7 +9,7 @@ import {
 } from '../services/tasksService.js';
 export const create = async (req, res, next) => {
   try {
-    const result = await createTaskService(req.body, req.files, req.user);
+    const result = await createTaskService(req.body, req.user);
     res.status(201).json({
       ...result,
       message: 'Task created Successfully'

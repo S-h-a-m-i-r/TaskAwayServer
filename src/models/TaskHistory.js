@@ -24,6 +24,8 @@ const taskHistorySchema = new mongoose.Schema(
       type: String,
       enum: ROLES
     },
+    isRecurringEvent: { type: Boolean, default: false }, 
+    parentTaskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task' }, 
   },
   {
     timestamps: true
