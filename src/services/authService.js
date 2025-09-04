@@ -3,9 +3,10 @@ import {
   generateToken,
   generateVerificationToken
 } from '../utils/generateToken.js';
-import { verifyUserEmail, sendEmail } from './emailService.js';
+import { sendEmail } from './emailService.js';
 import bcrypt from 'bcryptjs';
 import { createError } from '../utils/AppError.js';
+import { addCredits } from './creditsService.js';
 export const registerUser = async ({
   firstName,
   lastName,
@@ -45,6 +46,10 @@ export const registerUser = async ({
     planType,
     paymentMethod
   });
+
+  if (planType === "10_CREDITS") {
+    await addCredits(user._id, 10, "Initial Plan Credits");
+  }
   return {
     _id: user._id,
     userName: user?.userName,

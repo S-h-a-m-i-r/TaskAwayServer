@@ -3,6 +3,8 @@ import User from '../models/User.js';
 import TaskHistory from '../models/TaskHistory.js';
 import { Plan, complexKeywords } from '../utils/utilityEnums.js';
 import Message from '../models/Message.js';
+import { deductCredits } from './creditsService.js';
+import Credit from '../models/Credit.js';
 
 export async function createTaskService(taskData, user) {
   try {
@@ -10,14 +12,36 @@ export async function createTaskService(taskData, user) {
       throw new Error('Task data and user information are required');
     }
     let creditCost = 1; // Default value
-    
+    let creditBatches = [];
     if (user.planType === Plan['10_CREDITS']) {
-      creditCost = await determineTaskCredits(taskData.description || '');
-      
+      creditCost = await determineTaskCredits(taskData.description || '', taskData.isRecurring);
+       creditBatches = await Credit.find({
+              user: user?._id,
+              remainingCredits: { $gt: 0 },
+              expiresAt: { $gt: new Date() },
+            }).sort({ expiresAt: 1 });
+        
+            if (!creditBatches.length) {
+              throw new Error("No available credits for this user");
+            }
+        
+            // Calculate total available credits
+            const totalAvailable = creditBatches.reduce(
+              (sum, batch) => sum + batch.remainingCredits,
+              0
+            );
+        
+            if (totalAvailable < creditCost) {
+              const err = new Error("Not enough credits to create this task");
+              err.code = "INSUFFICIENT_CREDITS";
+              err.availableCredits = totalAvailable;
+              err.requiredCredits = creditCost;
+              throw err;
+            }
       // Validate that creditCost is within allowed enum values
       if (![1, 2].includes(creditCost)) {
         throw new Error(`Invalid credits cost: ${creditCost}. Must be 1 or 2.`);
-      }
+      } 
     }
 
     if (taskData.status) {
@@ -33,17 +57,12 @@ export async function createTaskService(taskData, user) {
       taskData.dueDate = calculateInitialDueDate(now, taskData.recurrencePattern);
     }
 
-    // Create task
+    
     taskData.createdBy = user._id;
+    taskData.creditCost = creditCost;
     const task = new Task(taskData);
     await task.save();
-
-    // Deduct credits for non-unlimited plan
-    // if (user.plan === '10_credits') {
-    //   user.credits -= task.creditCost;
-    //   user.creditPurchases.push({ credits: task.creditCost, purchaseDate: new Date(), taskId: task._id });
-    //   await user.save();
-    // }
+    await deductCredits(user._id, task._id, creditCost, creditBatches);
 
     return { success: true, task: { _id: task._id, message: 'Task created Successfully' } };
   } catch (err) {
@@ -269,9 +288,15 @@ export async function listTasksService(query, user) {
   return { success: true, tasks: tasks };
 }
 
-export async function determineTaskCredits(description) {
-  return complexKeywords.some(keyword => description.toLowerCase().includes(keyword)) ? 2 : 1;
+export async function determineTaskCredits(description, isRecurring = false) {
+let cost = 1;
+if (isRecurring) {
+  cost = 2; 
+} else {     
+cost = complexKeywords.some(keyword => description.toLowerCase().includes(keyword)) ? 2 : 1;
 }
+  return cost
+} 
 
 
 
