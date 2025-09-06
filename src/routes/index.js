@@ -129,5 +129,4 @@ router.use('/files', fileRoutes);
 router.use('/team', teamManagementRoutes);
 router.use('/stripe', paymentRoute);
 router.use('/credits', creditsRoute);
-
 export default router;

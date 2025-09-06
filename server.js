@@ -14,6 +14,7 @@ import jwt from 'jsonwebtoken';
 import User from './src/models/User.js';
 import mongoose from 'mongoose';
 import path from 'path';
+import { initEventListeners } from './src/services/eventService.js';
 
 dotenv.config();
 const app = express();
@@ -252,6 +253,7 @@ console.log('✅ Environment variables validated');
 // Check MongoDB connection before starting server
 try {
   await connectDB();
+  initEventListeners();
   console.log('✅ MongoDB connection validated');
 } catch (error) {
   console.error('❌ MongoDB connection failed:', error.message);

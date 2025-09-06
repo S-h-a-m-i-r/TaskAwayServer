@@ -66,6 +66,10 @@ const userSchema = new mongoose.Schema(
         type: String,
         default: null
       },
+      customerId: {
+        type: String,
+        default: null
+      },
       cardLast4: {
         type: String,
         default: null
@@ -89,7 +93,18 @@ const userSchema = new mongoose.Schema(
       token: {
         type: String,
         default: null
-      }
+      },
+      
+    },
+    activeSubscription: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Subscription',
+      default: null
+    },
+    subscriptionStatus: {
+      type: String,
+      enum: ['active', 'canceled', 'past_due', 'incomplete', 'incomplete_expired', 'trialing', 'unpaid', null],
+      default: null
     }
   },
   {
@@ -113,6 +128,7 @@ userSchema.methods.comparePassword = function (candidatePassword) {
 userSchema.methods.updatePaymentMethod = function (paymentMethodData) {
   this.paymentMethod = {
     paymentMethodId: paymentMethodData.paymentMethodId || null,
+    customerId: paymentMethodData.customerId || null,
     cardLast4: paymentMethodData.cardLast4 || null,
     cardBrand: paymentMethodData.cardBrand || null,
     cardExpMonth: paymentMethodData.cardExpMonth || null,
@@ -127,6 +143,7 @@ userSchema.methods.updatePaymentMethod = function (paymentMethodData) {
 userSchema.methods.removePaymentMethod = function () {
   this.paymentMethod = {
     paymentMethodId: null,
+    customerId: null,
     cardLast4: null,
     cardBrand: null,
     cardExpMonth: null,

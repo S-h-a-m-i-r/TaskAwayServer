@@ -7,6 +7,9 @@ import { sendEmail } from './emailService.js';
 import bcrypt from 'bcryptjs';
 import { createError } from '../utils/AppError.js';
 import { addCredits } from './creditsService.js';
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export const registerUser = async ({
   firstName,
   lastName,
@@ -47,9 +50,45 @@ export const registerUser = async ({
     paymentMethod
   });
 
-  if (planType === "10_CREDITS") {
-    await addCredits(user._id, 10, "Initial Plan Credits");
+  if (user.planType === "10_CREDITS" && user.paymentMethod) {
+    try {
+      // Create or get customer in Stripe
+      let customer;
+      if (!user.paymentMethod.customerId) {
+        // Create a new customer in Stripe
+        customer = await stripe.customers.create({
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`,
+          phone: user.phone,
+          metadata: {
+            userId: user._id.toString()
+          }
+        });
+        
+        // Save the Stripe customer ID to the user
+        user.paymentMethod.customerId = customer.id;
+      } else {
+        // Get existing customer
+        customer = await stripe.customers.retrieve(user.paymentMethod.customerId);
+      }
+       await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [
+          { price: process.env.STRIPE_10_CREDITS_PRICE_ID },
+        ],
+        expand: ['latest_invoice.payment_intent'],
+        metadata: {
+          userId: user._id.toString(),
+          planType: user.planType
+        }
+      })
+    } catch (stripeError) {
+      console.error('Stripe subscription creation failed:', stripeError);
+      // Continue with verification even if subscription fails
+      // We'll handle subscription issues separately
+    }
   }
+  await user.save();
   return {
     _id: user._id,
     userName: user?.userName,
