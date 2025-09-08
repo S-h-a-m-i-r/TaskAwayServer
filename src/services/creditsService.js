@@ -123,3 +123,4 @@ export async function deductCredits(userId, taskId, creditCost, creditBatches) {
       throw new Error('Failed to fetch credit history');
     }
 }
+
