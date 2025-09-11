@@ -1,5 +1,5 @@
 // services/eventService.js
-import Transaction from '../models/transaction.js';
+import Transaction from '../models/Transaction.js';
 import Subscription from '../models/subscription.js';
 import User from '../models/User.js';
 import { addCredits } from './creditsService.js';
@@ -14,9 +14,7 @@ export function initEventListeners() {
     try {
       const {
         userId,
-        planType,
-        amount,
-        metadata = {}
+        
       } = data;
 
       const startDate = data.currentPeriodStart instanceof Date ? 
@@ -45,10 +43,6 @@ export function initEventListeners() {
         subscriptionStatus: data.status || 'active',
         planType: data.planType
       });
-      if (data.planType === '10_CREDITS') {
-        await addCredits(data.userId, 10, 'Initial Subscription Credits');
-        console.log(`✅ Added 10 credits to user ${data.userId}`);
-      }
 
       console.log(`✅ Subscription created processed for user ${userId}`);
     } catch (err) {

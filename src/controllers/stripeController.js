@@ -1,7 +1,7 @@
 import stripeService from '../services/stripeService.js';
 import User from '../models/User.js';
 import { addCredits } from '../services/creditsService.js';
-import Transaction from '../models/transaction.js';
+import Transaction from '../models/Transaction.js';
 /**
  * Get a specific payment method for a customer
  * @param {Object} req - Express request object
@@ -49,11 +49,7 @@ export const listCustomerPaymentMethods = async (req, res) => {
         success: false,
         message: 'User not found with the provided customer ID'
       });
-    }
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    res.setHeader('Surrogate-Control', 'no-store');
+    }    
     
     const paymentMethods = await stripeService.listCustomerPaymentMethods(customerId, type);
     

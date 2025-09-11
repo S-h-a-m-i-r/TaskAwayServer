@@ -7,6 +7,7 @@ import teamManagementRoutes from './teamManagementRoutes.js';
 import mongoose from 'mongoose';
 import paymentRoute from './paymentRoute.js';
 import creditsRoute from './creditsRoutes.js';
+import invoiceRoutes from './invoiceRoutes.js';
 
 const router = express.Router();
 
@@ -129,4 +130,5 @@ router.use('/files', fileRoutes);
 router.use('/team', teamManagementRoutes);
 router.use('/stripe', paymentRoute);
 router.use('/credits', creditsRoute);
+router.use('/invoices', invoiceRoutes);
 export default router;

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Invoice #{{data.invoiceNumber}}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      color: #333;
+      line-height: 1.4;
+      margin: 0;
+      padding: 0;
+    }
+    .invoice-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #fff;
+    }
+    .header {
+      background-color: #475569;
+      color: white;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+    .header-right {
+      text-align: right;
+    }
+    .invoice-details {
+      background-color: #64748b;
+      padding: 15px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+    }
+    .invoice-details p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+    .main-content {
+      padding: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .total-due {
+      background-color: #f3f4f6;
+      padding: 15px;
+      border-radius: 5px;
+    }
+    .total-due .amount {
+      font-size: 24px;
+      font-weight: bold;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+    th {
+      text-align: left;
+      padding: 10px 5px;
+      border-bottom: 2px solid #e5e7eb;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    th.text-center {
+      text-align: center;
+    }
+    th.text-right {
+      text-align: right;
+    }
+    td {
+      padding: 15px 5px;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+    }
+    td.text-center {
+      text-align: center;
+    }
+    td.text-right {
+      text-align: right;
+    }
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+    }
+    .signature-area {
+      width: 200px;
+      height: 60px;
+      border-bottom: 1px solid #d1d5db;
+    }
+    .totals {
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-container">
+    <!-- Header Section -->
+    <div class="header">
+      <div>
+        <h1>{{data.businessName}}</h1>
+      </div>
+      <div class="header-right">
+        <h2 style="margin:0; font-size:20px;">Invoice</h2>
+        <p style="margin:0; font-size:14px; opacity:0.9">Tax Invoice</p>
+        <div style="margin-top:15px; font-size:14px;">
+          <p style="margin:5px 0">{{data.businessPhone}}</p>
+          <p style="margin:5px 0">{{data.businessEmail}}</p>
+          <p style="margin:5px 0">{{data.businessWebsite}}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Invoice Details -->
+    <div class="invoice-details">
+      <div>
+        <p style="font-weight:600">INVOICE NO.</p>
+        <p style="font-weight:600">REFERENCE</p>
+      </div>
+      <div>
+        <p>{{data.invoiceNumber}}</p>
+        <p>{{data.reference}}</p>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+        <div>
+          <p style="font-weight:600">ISSUE DATE</p>
+          <p>{{data.issueDate}}</p>
+        </div>
+        <div>
+          <p style="font-weight:600">DUE DATE</p>
+          <p>{{data.dueDate}}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <div class="grid">
+        <!-- FROM Section -->
+        <div>
+          <h3 style="font-size:14px; margin-bottom:10px">FROM</h3>
+          <div style="font-size:14px; color:#4b5563">
+            <p style="font-weight:600; margin:5px 0">{{data.businessName}}</p>
+            {{#each data.businessAddress}}
+              <p style="margin:5px 0">{{this}}</p>
+            {{/each}}
+          </div>
+        </div>
+
+        <!-- TO Section -->
+        <div>
+          <h3 style="font-size:14px; margin-bottom:10px">TO</h3>
+          <div style="font-size:14px; color:#4b5563">
+            <p style="font-weight:600; margin:5px 0">{{data.clientName}}</p>
+            {{#each data.clientAddress}}
+              <p style="margin:5px 0">{{this}}</p>
+            {{/each}}
+          </div>
+        </div>
+
+        <!-- Total Due -->
+        <div class="total-due">
+          <p style="font-size:14px; color:#4b5563; margin:0 0 5px 0">Total due</p>
+          <p class="amount">${{formatNumber data.total}}</p>
+        </div>
+      </div>
+
+      <!-- Items Table -->
+      <table>
+        <thead>
+          <tr>
+            <th>DESCRIPTION</th>
+            <th class="text-center">QUANTITY</th>
+            <th class="text-center">UNIT PRICE ($)</th>
+            <th class="text-right">AMOUNT ($)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{#each data.items}}
+            <tr>
+              <td>{{this.description}}</td>
+              <td class="text-center">
+                {{this.quantity}} {{#if (eq this.quantity 1)}}hour{{else}}hours{{/if}}
+              </td>
+              <td class="text-center">{{formatNumber this.unitPrice}}</td>
+              <td class="text-right">{{formatNumber this.amount}}</td>
+            </tr>
+          {{/each}}
+        </tbody>
+      </table>
+
+      <!-- Totals and Signature -->
+      <div class="footer">
+        <div>
+          <p style="font-size:14px; color:#4b5563; margin-bottom:15px">Issued by, signature:</p>
+          <div class="signature-area">
+            <!-- Signature placeholder -->
+          </div>
+        </div>
+        <div class="totals">
+          <div style="margin-bottom:10px">
+            <span style="font-size:14px; font-weight:600">Subtotal: </span>
+            <span style="font-size:14px">${{formatNumber data.subtotal}}</span>
+          </div>
+          <div style="font-size:18px; font-weight:bold">
+            <span>Total ({{data.currency}}): </span>
+            <span>${{formatNumber data.total}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

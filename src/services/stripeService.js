@@ -106,74 +106,116 @@ export const attachPaymentMethodToCustomer = async (customerId, paymentMethodId)
 
 
 export const createOneTimePayment = async (
-  customerId, 
-  paymentMethodId, 
-  amount, 
-  description, 
+  customerId,
+  paymentMethodId,
+  amount,
+  description,
   metadata = {}
 ) => {
   try {
-    // Validate inputs
-    if (!customerId) throw new Error('Customer ID is required');
-    if (!paymentMethodId) throw new Error('Payment Method ID is required');
-    if (!amount || amount <= 0) throw new Error('Valid amount is required');
+    // ✅ Input validation
+    if (!customerId) throw new Error("Customer ID is required");
+    if (!paymentMethodId) throw new Error("Payment Method ID is required");
+    if (!amount || amount <= 0) throw new Error("Valid amount is required");
 
-    // Create a payment intent
+    // ✅ Create a PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount, // Amount in cents
-      currency: 'usd',
+      amount: amount * 100, // Convert to cents
+      currency: "usd",
       customer: customerId,
       payment_method: paymentMethodId,
-      description: description || 'One-time payment',
-      confirm: true, // Confirm the payment intent immediately
-      off_session: true, // Customer not present (background payment)
+      description: description || "One-time payment",
+      confirm: true, // Confirm immediately
+      off_session: true, // Customer not present
       metadata: {
         ...metadata,
-        payment_type: 'one_time'
-      }
+        payment_type: "one_time",
+      },
     });
 
-    // Return successful payment details
+    // ✅ Return normalized successful response
     return {
       success: true,
       paymentId: paymentIntent.id,
-      amount: paymentIntent.amount / 100, // Convert cents to dollars
+      amount: paymentIntent.amount / 100, // Back to dollars
       status: paymentIntent.status,
       clientSecret: paymentIntent.client_secret,
-      receiptUrl: paymentIntent.charges?.data[0]?.receipt_url || null,
-      metadata: paymentIntent.metadata
+      receiptUrl: paymentIntent.charges?.data?.[0]?.receipt_url || null,
+      metadata: paymentIntent.metadata,
     };
   } catch (error) {
-    // Handle authentication required error
-    if (error.code === 'authentication_required') {
-      return {
-        success: false,
-        status: 'requires_action',
-        clientSecret: error.payment_intent.client_secret,
-        error: 'This payment requires additional authentication',
-        paymentId: error.payment_intent.id
-      };
+    // ✅ Stripe-specific error handling
+    if (error.type) {
+      switch (error.type) {
+        case "StripeCardError": // Card declined
+          return {
+            success: false,
+            status: "failed",
+            error: error.message || "Card was declined",
+            code: error.code,
+          };
+
+        case "StripeInvalidRequestError": // Invalid params sent to Stripe
+          return {
+            success: false,
+            status: "invalid_request",
+            error: error.message || "Invalid payment request",
+          };
+
+        case "StripeAPIError": // Internal Stripe API error
+          return {
+            success: false,
+            status: "stripe_api_error",
+            error: "Stripe API error. Please try again later.",
+          };
+
+        case "StripeConnectionError": // Network issue
+          return {
+            success: false,
+            status: "network_error",
+            error: "Network communication with Stripe failed. Try again.",
+          };
+
+        case "StripeAuthenticationError": // Invalid API key
+          return {
+            success: false,
+            status: "auth_error",
+            error: "Authentication with Stripe API failed.",
+          };
+
+        case "StripeIdempotencyError": // Idempotency key reuse
+          return {
+            success: false,
+            status: "idempotency_error",
+            error: "Duplicate request detected. Please retry.",
+          };
+
+        default:
+          break;
+      }
     }
-    
-    // Handle card errors
-    if (error.type === 'StripeCardError') {
+
+    // ✅ Special case: authentication required (3D Secure)
+    if (error.code === "authentication_required" && error.payment_intent) {
       return {
         success: false,
-        status: 'failed',
-        error: error.message || 'Card was declined',
-        code: error.code
+        status: "requires_action",
+        clientSecret: error.payment_intent.client_secret,
+        error: "This payment requires additional authentication",
+        paymentId: error.payment_intent.id,
       };
     }
 
-    // Log and handle other errors
-    console.error('❌ Error creating one-time payment:', error);
+    // ✅ Catch-all error fallback
+    console.error("❌ Error creating one-time payment:", error);
     return {
       success: false,
-      status: 'error',
-      error: error.message || 'An error occurred while processing payment'
+      status: "error",
+      error: error.message || "An unexpected error occurred while processing payment",
     };
   }
 };
+
 
 /**
  * Create a credit purchase using a specific price
