@@ -162,7 +162,24 @@ export const generateInvoicePdf = async (transactionId) => {
   }
 };
 
+/**
+ * Format a list of transactions as invoice objects for API response
+ * @param {Array} transactions - Array of transaction documents (populated with user)
+ * @returns {Array} - Array of invoice objects
+ */
+export const formatInvoiceList = (transactions) => {
+  return transactions.map(tx => ({
+    invoiceNumber: tx._id,
+    user: tx.user ? `${tx.user.firstName} ${tx.user.lastName}` : 'Unknown',
+    invoiceAmount: tx.amount,
+    invoiceDate: tx.createdAt,
+    invoicePaymentmethod: tx.user && tx.user.paymentMethod && tx.user.paymentMethod.cardBrand ? `${tx.user.paymentMethod.cardBrand} ****${tx.user.paymentMethod.cardLast4}` : 'N/A',
+    invoicePaymentType: tx.transactionType === 'subscription' ? 'subscription' : 'credit payment',
+  }));
+};
+
 export default {
   generateInvoiceHtml,
-  generateInvoicePdf
+  generateInvoicePdf,
+  formatInvoiceList
 };

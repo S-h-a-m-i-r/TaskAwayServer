@@ -1,5 +1,21 @@
 import Transaction from '../models/Transaction.js';
-import { generateInvoiceHtml, generateInvoicePdf } from '../services/invoiceService.js';
+import { generateInvoiceHtml, generateInvoicePdf, formatInvoiceList } from '../services/invoiceService.js';
+/**
+ * Get all transactions as invoices
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export const getAllInvoices = async (req, res) => {
+  try {
+    // Get all transactions, populate user
+    const transactions = await Transaction.find({}).populate('user');
+    const invoices = formatInvoiceList(transactions);
+    return res.json({ success: true, invoices });
+  } catch (err) {
+    console.error('Error fetching invoices:', err);
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
 // import Transaction from '../models/Transaction.js';
 
 /**
@@ -84,5 +100,6 @@ export const getInvoicePdf = async (req, res) => {
 
 export default {
   getInvoiceHtml,
-  getInvoicePdf
+  getInvoicePdf,
+  getAllInvoices
 };

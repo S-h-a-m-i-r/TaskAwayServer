@@ -1,6 +1,6 @@
 import express from 'express';
 import invoiceController from '../controllers/invoiceController.js';
-import { authenticateToken } from '../middleware/auth.js';
+import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -17,5 +17,14 @@ router.get('/:transactionId/html', authenticateToken, invoiceController.getInvoi
  * @access Private
  */
 router.get('/:transactionId/pdf', authenticateToken, invoiceController.getInvoicePdf);
+
+/**
+ * @route GET /api/invoices/all
+ * @desc Get all transactions as invoices
+ * @access Private (admin only)
+ */
+router.get('/all', authenticateToken,
+  authorizeRoles('ADMIN'), invoiceController.getAllInvoices);
+
 
 export default router;
