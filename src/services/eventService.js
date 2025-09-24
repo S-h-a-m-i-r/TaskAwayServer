@@ -1,5 +1,5 @@
 // services/eventService.js
-import Transaction from '../models/Transaction.js';
+import Transaction from '../models/transaction.js';
 import Subscription from '../models/subscription.js';
 import User from '../models/User.js';
 import { addCredits } from './creditsService.js';
