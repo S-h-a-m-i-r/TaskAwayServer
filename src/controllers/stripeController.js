@@ -1,7 +1,7 @@
 import stripeService from '../services/stripeService.js';
 import User from '../models/User.js';
 import { addCredits } from '../services/creditsService.js';
-import Transaction from '../models/Transaction.js';
+import Transaction from '../models/transaction.js';
 /**
  * Get a specific payment method for a customer
  * @param {Object} req - Express request object

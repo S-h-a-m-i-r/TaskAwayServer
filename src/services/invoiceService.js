@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url';
 import puppeteer from 'puppeteer';
 import { getTemplate } from '../utils/handlebars.js';
 import User from '../models/User.js';
-import Transaction from '../models/Transaction.js';
+import Transaction from '../models/transaction.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -1,4 +1,4 @@
-import Transaction from '../models/Transaction.js';
+import Transaction from '../models/transaction.js';
 import { generateInvoiceHtml, generateInvoicePdf, formatInvoiceList } from '../services/invoiceService.js';
 import { sendEmail } from '../services/emailService.js';
 /**
@@ -83,7 +83,7 @@ export const getAllInvoices = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error' });
   }
 };
-// import Transaction from '../models/Transaction.js';
+// import Transaction from '../models/transaction.js';
 
 /**
  * Get an invoice in HTML format
