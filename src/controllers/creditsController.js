@@ -1,4 +1,4 @@
-import { getUserCredits, addCredits, getCreditHistory } from '../services/creditsService.js';
+import { getUserCredits, addCredits, getCreditHistory, getSystemCreditStatistics } from '../services/creditsService.js';
 
 export async function getUserCreditsController(req, res) {
   try {
@@ -51,6 +51,22 @@ export async function getCreditHistoryController(req, res) {
     res.status(200).json({
       success: true,
       data: transactions
+    });
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      message: err.message
+    });
+  }
+}
+
+export async function getSystemCreditStatisticsController(req, res) {
+  try {
+    const statistics = await getSystemCreditStatistics();
+    
+    res.status(200).json({
+      success: true,
+      data: statistics
     });
   } catch (err) {
     res.status(400).json({

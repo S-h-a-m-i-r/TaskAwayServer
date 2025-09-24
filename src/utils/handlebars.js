@@ -12,6 +12,7 @@ Handlebars.registerHelper('eq', function(a, b) {
 });
 
 Handlebars.registerHelper('formatNumber', function(num) {
+  if (typeof num !== 'number' || isNaN(num)) return '0.00';
   return num.toFixed(2);
 });
 

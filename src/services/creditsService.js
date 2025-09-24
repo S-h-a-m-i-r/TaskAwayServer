@@ -113,14 +113,107 @@ export async function deductCredits(userId, taskId, creditCost, creditBatches) {
   // Get credit transaction history
   export async function getCreditHistory(userId) {
     try {
-      const transactions = await CreditTransaction.find({ userId })
-        .populate('taskId', 'title')
-        .sort({ transactionDate: -1 });
+      const transactions = await CreditTransaction.find({ user: userId })
+        .populate('task', 'title')
+        .sort({ createdAt: -1 });
         
       return transactions;
     } catch (err) {
       console.error('Error fetching credit history:', err);
       throw new Error('Failed to fetch credit history');
     }
+}
+
+// Get system-wide credit statistics (admin/manager only)
+export async function getSystemCreditStatistics() {
+  try {
+    const now = new Date();
+    
+    // Calculate total credits used so far (all negative transactions)
+    const totalCreditsUsedResult = await CreditTransaction.aggregate([
+      {
+        $match: {
+          change: { $lt: 0 } // Only negative transactions (credits spent)
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalUsed: { $sum: { $abs: "$change" } } // Convert negative to positive
+        }
+      }
+    ]);
+    
+    const totalCreditsUsed = totalCreditsUsedResult.length > 0 ? totalCreditsUsedResult[0].totalUsed : 0;
+    
+    // Calculate credits used this month
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const creditsUsedThisMonthResult = await CreditTransaction.aggregate([
+      {
+        $match: {
+          change: { $lt: 0 }, // Only negative transactions
+          createdAt: { $gte: startOfMonth }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          monthlyUsed: { $sum: { $abs: "$change" } }
+        }
+      }
+    ]);
+    
+    const creditsUsedThisMonth = creditsUsedThisMonthResult.length > 0 ? creditsUsedThisMonthResult[0].monthlyUsed : 0;
+    
+    // Calculate remaining credits overall (all non-expired credits)
+    const remainingCreditsResult = await Credit.aggregate([
+      {
+        $match: {
+          expiresAt: { $gt: now },
+          remainingCredits: { $gt: 0 }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalRemaining: { $sum: "$remainingCredits" }
+        }
+      }
+    ]);
+    
+    const remainingCreditsOverall = remainingCreditsResult.length > 0 ? remainingCreditsResult[0].totalRemaining : 0;
+    
+    // Calculate expiring credits soon (next 30 days)
+    const thirtyDaysFromNow = new Date(now);
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+    
+    const expiringCreditsResult = await Credit.aggregate([
+      {
+        $match: {
+          expiresAt: { $gt: now, $lte: thirtyDaysFromNow },
+          remainingCredits: { $gt: 0 }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          expiringSoon: { $sum: "$remainingCredits" }
+        }
+      }
+    ]);
+    
+    const expiringCreditsSoon = expiringCreditsResult.length > 0 ? expiringCreditsResult[0].expiringSoon : 0;
+    
+    return {
+      totalCreditsUsed,
+      creditsUsedThisMonth,
+      remainingCreditsOverall,
+      expiringCreditsSoon
+    };
+    
+  } catch (err) {
+    console.error('Error fetching system credit statistics:', err);
+    throw new Error('Failed to fetch system credit statistics');
+  }
 }
 

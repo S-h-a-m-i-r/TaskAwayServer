@@ -1,5 +1,5 @@
 import express from 'express';
-import { getUserCreditsController, addCreditsController, getCreditHistoryController } from '../controllers/creditsController.js';
+import { getUserCreditsController, addCreditsController, getCreditHistoryController, getSystemCreditStatisticsController } from '../controllers/creditsController.js';
 import { authenticateToken, authorizeRoles } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -12,5 +12,8 @@ router.post('/add', authenticateToken, addCreditsController);
 
 // Get credit transaction history
 router.get('/history', authenticateToken, getCreditHistoryController);
+
+// Get system credit statistics (admin/manager only)
+router.get('/statistics', authenticateToken, authorizeRoles('ADMIN', 'MANAGER'), getSystemCreditStatisticsController);
 
 export default router;

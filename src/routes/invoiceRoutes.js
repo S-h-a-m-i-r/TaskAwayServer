@@ -9,7 +9,7 @@ const router = express.Router();
  * @desc Get invoice in HTML format
  * @access Private
  */
-router.get('/:transactionId/html', authenticateToken, invoiceController.getInvoiceHtml);
+router.get('/:transactionId/html', authenticateToken, invoiceController.emailInvoiceToUser);
 
 /**
  * @route GET /api/invoices/:transactionId/pdf
