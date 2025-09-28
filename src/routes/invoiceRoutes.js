@@ -21,10 +21,10 @@ router.get('/:transactionId/pdf', authenticateToken, invoiceController.getInvoic
 /**
  * @route GET /api/invoices/all
  * @desc Get all transactions as invoices
- * @access Private (admin only)
+ * @access Private (admin and manager only)
  */
 router.get('/all', authenticateToken,
-  authorizeRoles('ADMIN'), invoiceController.getAllInvoices);
+  authorizeRoles('ADMIN', 'MANAGER'), invoiceController.getAllInvoices);
 
 
 export default router;

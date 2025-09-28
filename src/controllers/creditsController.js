@@ -1,4 +1,4 @@
-import { getUserCredits, addCredits, getCreditHistory, getSystemCreditStatistics } from '../services/creditsService.js';
+import { getUserCredits, addCredits, getCreditHistory, getSystemCreditStatistics, getAllCustomersWithCredits } from '../services/creditsService.js';
 
 export async function getUserCreditsController(req, res) {
   try {
@@ -19,17 +19,10 @@ export async function getUserCreditsController(req, res) {
 
 export async function addCreditsController(req, res) {
   try {
-    const { userId, amount } = req.body;
+    const { userId, amount, reason = 'Purchase' } = req.body;
     
-    // Only admin can add credits to any user
-    if (req.user.role !== 'ADMIN' && req.user._id.toString() !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Unauthorized to add credits for other users'
-      });
-    }
     
-    const credit = await addCredits(userId, amount);
+    const credit = await addCredits(userId, amount, reason);
     
     res.status(201).json({
       success: true,
@@ -67,6 +60,23 @@ export async function getSystemCreditStatisticsController(req, res) {
     res.status(200).json({
       success: true,
       data: statistics
+    });
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      message: err.message
+    });
+  }
+}
+
+export async function getAllCustomersWithCreditsController(req, res) {
+  try {
+    const customers = await getAllCustomersWithCredits();
+    
+    res.status(200).json({
+      success: true,
+      data: customers,
+      count: customers.length
     });
   } catch (err) {
     res.status(400).json({

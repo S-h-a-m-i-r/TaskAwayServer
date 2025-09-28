@@ -1,5 +1,6 @@
 import Credit from "../models/Credit.js";
 import CreditTransaction from "../models/CreditTransaction.js";
+import User from "../models/User.js";
 
 /**
  * Give credits to a user
@@ -214,6 +215,120 @@ export async function getSystemCreditStatistics() {
   } catch (err) {
     console.error('Error fetching system credit statistics:', err);
     throw new Error('Failed to fetch system credit statistics');
+  }
+}
+
+// Get all customers with their credit information
+export async function getAllCustomersWithCredits() {
+  try {
+    const now = new Date();
+    
+    // Get all users with role 'CUSTOMER'
+    const customers = await User.find({ role: 'CUSTOMER' })
+      .select('firstName lastName email planType phone createdAt')
+      .sort({ createdAt: -1 });
+
+    // Get credit data for all customers
+    const customerIds = customers.map(customer => customer._id);
+    
+    // Get all credits for these customers (including expired and used up credits)
+    const credits = await Credit.find({ 
+      user: { $in: customerIds }
+    }).sort({ expiresAt: 1 });
+
+    // Get all credit transactions for purchase history (all positive transactions)
+    const purchaseTransactions = await CreditTransaction.find({
+      user: { $in: customerIds },
+      change: { $gt: 0 } // All positive transactions (purchases, admin additions, subscriptions, etc.)
+    }).sort({ createdAt: -1 });
+
+    // Group credits by user
+    const creditsByUser = {};
+    credits.forEach(credit => {
+      if (!creditsByUser[credit.user.toString()]) {
+        creditsByUser[credit.user.toString()] = [];
+      }
+      creditsByUser[credit.user.toString()].push(credit);
+    });
+
+    // Group purchase transactions by user
+    const purchasesByUser = {};
+    purchaseTransactions.forEach(transaction => {
+      if (!purchasesByUser[transaction.user.toString()]) {
+        purchasesByUser[transaction.user.toString()] = [];
+      }
+      purchasesByUser[transaction.user.toString()].push(transaction);
+    });
+
+    // Calculate data for each customer
+    const customersWithCredits = customers.map(customer => {
+      const customerId = customer._id.toString();
+      const customerCredits = creditsByUser[customerId] || [];
+      const customerPurchases = purchasesByUser[customerId] || [];
+
+      // Calculate total purchased credits (sum of all positive transactions)
+      const totalPurchasedCredits = customerPurchases.reduce((sum, transaction) => sum + transaction.change, 0);
+      
+      // Alternative calculation: sum of all credit batches (this should match the transaction total)
+      const totalCreditsFromBatches = customerCredits.reduce((sum, credit) => sum + credit.totalCredits, 0);
+      
+      // Use the higher value to ensure we don't miss any credits
+      const finalTotalPurchasedCredits = Math.max(totalPurchasedCredits, totalCreditsFromBatches);
+
+      // Calculate total remaining credits (only non-expired credits with remaining > 0)
+      const now = new Date();
+      const totalRemainingCredits = customerCredits
+        .filter(credit => credit.expiresAt > now && credit.remainingCredits > 0)
+        .reduce((sum, credit) => sum + credit.remainingCredits, 0);
+
+      // Calculate total spent credits (total purchased - total remaining)
+      const totalSpentCredits = finalTotalPurchasedCredits - totalRemainingCredits;
+
+      // Calculate credits expiring soon (next 7 days)
+      const oneWeekFromNow = new Date(now);
+      oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+      
+      const expiringSoonCredits = customerCredits
+        .filter(credit => credit.expiresAt > now && credit.expiresAt <= oneWeekFromNow && credit.remainingCredits > 0)
+        .reduce((sum, credit) => sum + credit.remainingCredits, 0);
+
+      // Get last purchase date
+      const lastPurchaseDate = customerPurchases.length > 0 
+        ? customerPurchases[0].createdAt 
+        : null;
+
+      // Get earliest expiry date
+      const earliestExpiryDate = customerCredits.length > 0 
+        ? customerCredits[0].expiresAt 
+        : null;
+
+      return {
+        customerId: customer._id,
+        customerName: `${customer.firstName} ${customer.lastName}`,
+        customerEmail: customer.email,
+        customerPhone: customer.phone,
+        customerPlanType: customer.planType,
+        totalPurchasedCredits: finalTotalPurchasedCredits,
+        totalRemainingCredits,
+        totalSpentCredits,
+        expiringSoonCredits,
+        lastPurchaseDate,
+        earliestExpiryDate,
+        creditBatches: customerCredits.map(credit => ({
+          batchId: credit._id,
+          totalCredits: credit.totalCredits,
+          remainingCredits: credit.remainingCredits,
+          expiresAt: credit.expiresAt,
+          createdAt: credit.createdAt
+        }))
+      };
+    });
+
+    return customersWithCredits;
+
+  } catch (err) {
+    console.error('Error fetching customers with credits:', err);
+    throw new Error('Failed to fetch customers with credits');
   }
 }
 
