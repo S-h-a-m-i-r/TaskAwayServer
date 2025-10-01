@@ -32,4 +32,5 @@ const taskHistorySchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model('TaskHistory', taskHistorySchema);
+// Use explicit connection to avoid buffering issues
+export default mongoose.connection.model('TaskHistory', taskHistorySchema);

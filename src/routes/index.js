@@ -8,6 +8,7 @@ import mongoose from 'mongoose';
 import paymentRoute from './paymentRoute.js';
 import creditsRoute from './creditsRoutes.js';
 import invoiceRoutes from './invoiceRoutes.js';
+import schedulerRoutes from './schedulerRoutes.js';
 
 const router = express.Router();
 
@@ -44,11 +45,11 @@ router.get('/health', (req, res) => {
 
   // Check for critical failures
   const criticalIssues = [];
-  
+
   if (dbStatus !== 1) {
     criticalIssues.push('Database connection is not ready');
   }
-  
+
   if (!process.env.AWS_ACCESS_KEY || !process.env.AWS_SECRET_KEY) {
     criticalIssues.push('AWS credentials are missing');
   }
@@ -131,4 +132,5 @@ router.use('/team', teamManagementRoutes);
 router.use('/stripe', paymentRoute);
 router.use('/credits', creditsRoute);
 router.use('/invoices', invoiceRoutes);
+router.use('/scheduler', schedulerRoutes);
 export default router;

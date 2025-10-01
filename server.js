@@ -15,6 +15,7 @@ import User from './src/models/User.js';
 import mongoose from 'mongoose';
 import path from 'path';
 import { initEventListeners } from './src/services/eventService.js';
+import schedulerService from './src/services/schedulerService.js';
 
 dotenv.config();
 const app = express();
@@ -40,9 +41,11 @@ connectDB();
 
 // app.use(helmet());
 //on suggestion from copiltot
-app.use(helmet({
-  contentSecurityPolicy: false
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: false
+  })
+);
 
 app.use(
   cors({
@@ -187,7 +190,6 @@ io.on('connection', (socket) => {
   });
 });
 
-
 // Health check endpoint for Elastic Beanstalk
 app.get('/api/health', (req, res) => {
   res.status(200).json({
@@ -209,7 +211,7 @@ app.get('/api/db-status', async (req, res) => {
       2: 'connecting',
       3: 'disconnecting'
     };
-    
+
     res.status(200).json({
       database: statusMap[dbStatus] || 'unknown',
       timestamp: new Date().toISOString()
@@ -240,7 +242,9 @@ console.log('🔍 Validating startup requirements...');
 
 // Check critical environment variables
 const requiredEnvVars = ['MONGO_URI', 'JWT_SECRET'];
-const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+const missingEnvVars = requiredEnvVars.filter(
+  (varName) => !process.env[varName]
+);
 
 if (missingEnvVars.length > 0) {
   console.error('❌ Missing required environment variables:', missingEnvVars);
@@ -254,6 +258,7 @@ console.log('✅ Environment variables validated');
 try {
   await connectDB();
   initEventListeners();
+  schedulerService.start();
   console.log('✅ MongoDB connection validated');
 } catch (error) {
   console.error('❌ MongoDB connection failed:', error.message);
@@ -264,21 +269,24 @@ const PORT = process.env.PORT || 8080;
 const HOST = process.env.HOST || 'http://localhost';
 
 // Enhanced server startup logging with error handling
-server.listen(PORT, () => {
-  console.log('🚀 TaskAway Server Started Successfully!');
-  console.log(`📍 Server URL: ${HOST}:${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+server
+  .listen(PORT, () => {
+    console.log('🚀 TaskAway Server Started Successfully!');
+    console.log(`📍 Server URL: ${HOST}:${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 
-  console.log(`⏰ Started at: ${new Date().toISOString()}`);
-  console.log('='.repeat(50));
-}).on('error', (error) => {
-  console.error('❌ Server failed to start:', error);
-  process.exit(1);
-});
+    console.log(`⏰ Started at: ${new Date().toISOString()}`);
+    console.log('='.repeat(50));
+  })
+  .on('error', (error) => {
+    console.error('❌ Server failed to start:', error);
+    process.exit(1);
+  });
 
 // Graceful shutdown handling
 process.on('SIGTERM', () => {
   console.log('🔄 SIGTERM received, shutting down gracefully...');
+  schedulerService.stop();
   server.close(() => {
     console.log('✅ Server closed');
     process.exit(0);
@@ -287,6 +295,7 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   console.log('🔄 SIGINT received, shutting down gracefully...');
+  schedulerService.stop();
   server.close(() => {
     console.log('✅ Server closed');
     process.exit(0);

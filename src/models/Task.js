@@ -61,16 +61,80 @@ const taskSchema = new mongoose.Schema(
       required: true,
       default: 1
     },
-      // Recurrence-related fields
-      isRecurring: { type: Boolean, default: false },
-      recurrencePattern: {
+    // Recurrence-related fields
+    isRecurring: { type: Boolean, default: false },
+    recurrencePattern: {
+      type: String,
+      enum: ['Daily', 'Weekly', 'Monthly'],
+      required: false
+    },
+    recurrenceEndDate: { type: Date, required: false }, // when recurrence should stop
+    recurrenceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Task',
+      required: false
+    },
+    dueDate: { type: Date, required: false },
+
+    // Detailed recurring settings from frontend
+    recurringSettings: {
+      pattern: {
         type: String,
         enum: ['Daily', 'Weekly', 'Monthly'],
-        required: false,
+        required: false
       },
-      recurrenceEndDate: { type: Date, required: false, }, // when recurrence should stop
-      recurrenceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task', required: false, }, 
-      dueDate: { type: Date, required: false }, 
+      dailyInterval: { type: Number, required: false },
+      weeklyInterval: { type: Number, required: false },
+      weeklyDays: [
+        {
+          type: String,
+          enum: [
+            'Sunday',
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday'
+          ]
+        }
+      ],
+      monthlyInterval: { type: Number, required: false },
+      monthlyDayOfWeek: {
+        type: String,
+        enum: ['first', 'second', 'third', 'fourth', 'last'],
+        required: false
+      },
+      monthlyDay: {
+        type: String,
+        enum: [
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday',
+          'Sunday'
+        ],
+        required: false
+      },
+      monthlyDayOfMonth: { type: Number, required: false },
+      startDate: { type: Date, required: false },
+      endType: {
+        type: String,
+        enum: ['endBy', 'endAfter', 'noEnd'],
+        required: false
+      },
+      endDate: { type: Date, required: false },
+      endAfterCount: { type: Number, required: false }
+    },
+
+    // Additional fields for task relationships
+    parentTaskId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Task',
+      required: false
+    },
     files: {
       type: [fileSchema],
       validate: [
@@ -91,7 +155,7 @@ const taskSchema = new mongoose.Schema(
     }
   },
   {
-    timestamps: true 
+    timestamps: true
   }
 );
 

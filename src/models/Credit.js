@@ -10,4 +10,5 @@ const creditSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("Credit", creditSchema);
+// Use explicit connection to avoid buffering issues
+export default mongoose.connection.model("Credit", creditSchema);

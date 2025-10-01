@@ -8,4 +8,8 @@ global.console = {
   // error: jest.fn(),
 };
 
+// Make jest globals available
+import { jest } from '@jest/globals';
+global.jest = jest;
+
 // Setup any global test requirements here

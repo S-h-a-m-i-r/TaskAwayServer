@@ -18,4 +18,5 @@ const messageSchema = new mongoose.Schema({
  timestamp: { type: Date, default: Date.now }
 }, { timestamps: true });
 
-export default mongoose.model('Message', messageSchema);
+// Use explicit connection to avoid buffering issues
+export default mongoose.connection.model('Message', messageSchema);

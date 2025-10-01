@@ -47,5 +47,6 @@ const transactionSchema = new mongoose.Schema(
   }
 );
 
-const Transaction = mongoose.model('Transaction', transactionSchema);
+// Use explicit connection to avoid buffering issues
+const Transaction = mongoose.connection.model('Transaction', transactionSchema);
 export default Transaction;

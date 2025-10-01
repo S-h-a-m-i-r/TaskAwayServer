@@ -60,5 +60,6 @@ const subscriptionSchema = new mongoose.Schema(
   }
 );
 
-const Subscription = mongoose.model('Subscription', subscriptionSchema);
+// Use explicit connection to avoid buffering issues
+const Subscription = mongoose.connection.model('Subscription', subscriptionSchema);
 export default Subscription;

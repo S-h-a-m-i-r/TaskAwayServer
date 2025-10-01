@@ -14,57 +14,93 @@ export async function createTaskService(taskData, user) {
     let creditCost = 1; // Default value
     let creditBatches = [];
     if (user.planType === Plan['10_CREDITS']) {
-      creditCost = await determineTaskCredits(taskData.description || '', taskData.isRecurring);
-       creditBatches = await Credit.find({
-              user: user?._id,
-              remainingCredits: { $gt: 0 },
-              expiresAt: { $gt: new Date() },
-            }).sort({ expiresAt: 1 });
-        
-            if (!creditBatches.length) {
-              throw new Error("No available credits for this user");
-            }
-        
-            // Calculate total available credits
-            const totalAvailable = creditBatches.reduce(
-              (sum, batch) => sum + batch.remainingCredits,
-              0
-            );
-        
-            if (totalAvailable < creditCost) {
-              const err = new Error("Not enough credits to create this task");
-              err.code = "INSUFFICIENT_CREDITS";
-              err.availableCredits = totalAvailable;
-              err.requiredCredits = creditCost;
-              throw err;
-            }
+      creditCost = await determineTaskCredits(
+        taskData.description || '',
+        taskData.isRecurring
+      );
+      creditBatches = await Credit.find({
+        user: user?._id,
+        remainingCredits: { $gt: 0 },
+        expiresAt: { $gt: new Date() }
+      }).sort({ expiresAt: 1 });
+
+      if (!creditBatches.length) {
+        throw new Error('No available credits for this user');
+      }
+
+      // Calculate total available credits
+      const totalAvailable = creditBatches.reduce(
+        (sum, batch) => sum + batch.remainingCredits,
+        0
+      );
+
+      if (totalAvailable < creditCost) {
+        const err = new Error('Not enough credits to create this task');
+        err.code = 'INSUFFICIENT_CREDITS';
+        err.availableCredits = totalAvailable;
+        err.requiredCredits = creditCost;
+        throw err;
+      }
       // Validate that creditCost is within allowed enum values
       if (![1, 2].includes(creditCost)) {
         throw new Error(`Invalid credits cost: ${creditCost}. Must be 1 or 2.`);
-      } 
+      }
     }
 
     if (taskData.status) {
       const validStatuses = ['Submitted', 'InProgress', 'Completed', 'Closed'];
       if (!validStatuses.includes(taskData.status)) {
-        throw new Error(`Invalid status: ${taskData.status}. Valid statuses are: ${validStatuses.join(', ')}`);
+        throw new Error(
+          `Invalid status: ${taskData.status}. Valid statuses are: ${validStatuses.join(', ')}`
+        );
       }
     }
 
-    // Calculate due date for recurring tasks if not explicitly provided
-    if (taskData.isRecurring && taskData.recurrencePattern && !taskData.dueDate) {
-      const now = new Date();
-      taskData.dueDate = calculateInitialDueDate(now, taskData.recurrencePattern);
+    // Handle recurring task settings
+    if (taskData.isRecurring && taskData.recurringSettings) {
+      // Extract pattern from recurringSettings
+      taskData.recurrencePattern = taskData.recurringSettings.pattern;
+      // Set recurrence end date based on endType
+      if (
+        taskData.recurringSettings.endType === 'endBy' &&
+        taskData.recurringSettings.endDate
+      ) {
+        taskData.recurrenceEndDate = new Date(
+          taskData.recurringSettings.endDate
+        );
+      } else if (
+        taskData.recurringSettings.endType === 'endAfter' &&
+        taskData.recurringSettings.endAfterCount
+      ) {
+        // For endAfter, we'll calculate the end date based on the pattern and count
+        // This will be handled when the task is created
+        taskData.recurrenceEndDate = calculateEndDateFromCount(
+          taskData.recurringSettings.startDate,
+          taskData.recurrencePattern,
+          taskData.recurringSettings.endAfterCount,
+          taskData.recurringSettings
+        );
+      }
+      // For 'noEnd', recurrenceEndDate remains null
+    } else if (
+      taskData.isRecurring &&
+      taskData.recurrencePattern &&
+      !taskData.dueDate
+    ) {
+      // Fallback for backward compatibility
+      taskData.dueDate = null;
     }
 
-    
     taskData.createdBy = user._id;
     taskData.creditCost = creditCost;
     const task = new Task(taskData);
     await task.save();
     await deductCredits(user._id, task._id, creditCost, creditBatches);
 
-    return { success: true, task: { _id: task._id, message: 'Task created Successfully' } };
+    return {
+      success: true,
+      task: { _id: task._id, message: 'Task created Successfully' }
+    };
   } catch (err) {
     err.status = err.status || 400;
     err.message = err.message || 'Failed to create task';
@@ -80,8 +116,8 @@ export async function viewTaskService(taskId, user = null) {
   }
 
   const task = await Task.findById(taskId)
-  .populate('assignedTo', 'firstName lastName email role')
-  .populate('createdBy', 'firstName lastName email planType');
+    .populate('assignedTo', 'firstName lastName email role')
+    .populate('createdBy', 'firstName lastName email planType');
 
   if (!task) {
     const error = new Error('Task not found');
@@ -115,7 +151,6 @@ export async function viewTaskService(taskId, user = null) {
   };
 }
 
-
 export async function taskAssignService(taskId, userId) {
   if (!taskId || !userId) {
     const error = new Error('Task ID and User ID are required');
@@ -129,20 +164,18 @@ export async function taskAssignService(taskId, userId) {
     const error = new Error('Task Or User not found');
     error.status = 404;
     throw error;
-  } 
+  }
   if (task.assignedTo) {
     const error = new Error('Task is already assigned');
     error.status = 400;
     throw error;
-  } 
-    task.assignedTo = user?.id;
-    task.assignedToRole = user?.role;
-    task.status = 'InProgress';
-    await task.save();
-    return { success: true, data: task };
-  
+  }
+  task.assignedTo = user?.id;
+  task.assignedToRole = user?.role;
+  task.status = 'InProgress';
+  await task.save();
+  return { success: true, data: task };
 }
-
 
 export async function taskReAssignService(taskId, userId) {
   if (!taskId || !userId) {
@@ -158,7 +191,7 @@ export async function taskReAssignService(taskId, userId) {
     const error = new Error('Task Or User not found');
     error.status = 404;
     throw error;
-  } else {  
+  } else {
     task.assignedTo = user?.id;
     task.assignedToRole = user?.role;
     await task.save();
@@ -198,7 +231,9 @@ export async function updateTaskService(taskId, updateData) {
   if (updateData.status) {
     const validStatuses = ['Submitted', 'InProgress', 'Completed', 'Closed'];
     if (!validStatuses.includes(updateData.status)) {
-      const error = new Error(`Invalid status: ${updateData.status}. Valid statuses are: ${validStatuses.join(', ')}`);
+      const error = new Error(
+        `Invalid status: ${updateData.status}. Valid statuses are: ${validStatuses.join(', ')}`
+      );
       error.status = 400;
       throw error;
     }
@@ -209,45 +244,6 @@ export async function updateTaskService(taskId, updateData) {
     const error = new Error('Task not found');
     error.status = 404;
     throw error;
-  }
-
-
-  if (
-    updateData.status &&
-    (updateData.status === "Closed") &&
-    task.isRecurring
-  ) {
-    const nextDueDate = calculateNextDueDate(task.dueDate, task.recurrencePattern);
-
-    // Only create new task if recurrence is still valid
-    if (nextDueDate && (!task.recurrenceEndDate || nextDueDate <= task.recurrenceEndDate)) {
-      const newTask = await Task.create({
-        title: task.title,
-        description: task.description,
-        status: "Submitted", // new task starts fresh
-        createdBy: task.createdBy,
-        assignedTo: task.assignedTo,
-        assignedToRole: task.assignedToRole,
-        creditCost: task.creditCost,
-        files: task.files,
-        isRecurring: true,
-        recurrencePattern: task.recurrencePattern,
-        recurrenceEndDate: task.recurrenceEndDate,
-        recurrenceId: task.recurrenceId || task._id,
-        dueDate: nextDueDate,
-        parentTaskId: task._id,
-      });
-
-      
-      await TaskHistory.create({
-        taskId: newTask._id,
-        currentlyAssignedUserId: newTask.assignedTo,
-        currentlyAssignedUserRole: newTask.assignedToRole,
-        isRecurringEvent: true,
-        recurrencePattern: newTask.recurrencePattern,
-        parentTaskId: task._id,
-      });
-    }
   }
 
   return { success: true, data: task };
@@ -272,12 +268,12 @@ export async function deleteTaskService(taskId) {
 export async function listTasksService(query, user) {
   const { status, title, sortBy = 'createdAt', order = 'desc' } = query;
   const filter = user.role === 'CUSTOMER' ? { createdBy: user._id } : {};
-  
+
   if (status) {
     filter.status = status;
   }
   if (title) {
-    filter.title = { $regex: title, $options: 'i' }; 
+    filter.title = { $regex: title, $options: 'i' };
   }
 
   const tasks = await Task.find(filter)
@@ -289,53 +285,55 @@ export async function listTasksService(query, user) {
 }
 
 export async function determineTaskCredits(description, isRecurring = false) {
-let cost = 1;
-if (isRecurring) {
-  cost = 2; 
-} else {     
-cost = complexKeywords.some(keyword => description.toLowerCase().includes(keyword)) ? 2 : 1;
-}
-  return cost
-} 
+  function containsKeyword(description) {
+    const lowerDesc = description.toLowerCase();
 
-
-
-function calculateNextDueDate(prevDueDate, recurrencePattern) {
-  if (!prevDueDate) return null;
-
-  const date = new Date(prevDueDate); // prevDueDate must be UTC
-
-  switch (recurrencePattern) {
-    case "Daily":
-      date.setUTCDate(date.getUTCDate() + 1);
-      break;
-    case "Weekly":
-      date.setUTCDate(date.getUTCDate() + 7);
-      break;
-    case "Monthly":
-      date.setUTCMonth(date.getUTCMonth() + 1);
-      break;
-    default:
-      return null;
+    return complexKeywords.some((keyword) => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'i'); // case-insensitive, whole word
+      return regex.test(lowerDesc);
+    });
   }
-  return date;
+  let cost = 1;
+  if (isRecurring) {
+    cost = 2;
+  } else {
+    cost = containsKeyword(description) ? 2 : 1;
+  }
+  return cost;
 }
 
-function calculateInitialDueDate(now, recurrencePattern) {
-  const date = new Date(now);
+function calculateEndDateFromCount(startDate, pattern, count, settings) {
+  if (!startDate || !count || count <= 0) return null;
 
-  switch (recurrencePattern) {
-    case "Daily":
-      date.setUTCDate(date.getUTCDate() + 1);
-      break;
-    case "Weekly":
-      date.setUTCDate(date.getUTCDate() + 7);
-      break;
-    case "Monthly":
-      date.setUTCMonth(date.getUTCMonth() + 1);
-      break;
-    default:
-      return null;
+  const start = new Date(startDate);
+  let currentDate = new Date(start);
+
+  // Calculate the end date based on pattern and count
+  for (let i = 1; i < count; i++) {
+    switch (pattern) {
+      case 'Daily':
+        currentDate.setUTCDate(
+          currentDate.getUTCDate() + (settings.dailyInterval || 1)
+        );
+        break;
+      case 'Weekly':
+        const weeklyInterval = settings.weeklyInterval || 1;
+        currentDate.setUTCDate(currentDate.getUTCDate() + 7 * weeklyInterval);
+        break;
+      case 'Monthly':
+        const monthlyInterval = settings.monthlyInterval || 1;
+        currentDate.setUTCMonth(currentDate.getUTCMonth() + monthlyInterval);
+        break;
+      case 'Yearly':
+        const yearlyInterval = settings.yearlyInterval || 1;
+        currentDate.setUTCFullYear(
+          currentDate.getUTCFullYear() + yearlyInterval
+        );
+        break;
+      default:
+        return null;
+    }
   }
-  return date;
+
+  return currentDate;
 }
