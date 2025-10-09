@@ -27,7 +27,9 @@ const io = new Server(server, {
       'http://localhost:5173',
       'http://13.53.134.0:5173',
       'http://13.53.134.0:5000',
-      // Production - add all your Vercel domains
+      // Production domains
+      'https://taskaway.com.au',
+      'https://www.taskaway.com.au',
       'https://task-it-git-main-shamir1.vercel.app',
       'https://task-it-kappa.vercel.app',
       // Add any other domains you might use
@@ -43,7 +45,39 @@ connectDB();
 //on suggestion from copiltot
 app.use(
   helmet({
-    contentSecurityPolicy: false
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://accounts.google.com",
+          "https://www.gstatic.com"
+        ],
+        styleSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          "https://fonts.googleapis.com"
+        ],
+        connectSrc: [
+          "'self'",
+          "https://accounts.google.com",
+          "https://www.googleapis.com",
+          "wss:",
+          "ws:"
+        ],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "https://www.gstatic.com"
+        ],
+        frameSrc: [
+          "'self'",
+          "https://accounts.google.com"
+        ],
+        objectSrc: ["'none'"]
+      }
+    }
   })
 );
 
@@ -54,7 +88,9 @@ app.use(
       'http://localhost:5173',
       'http://13.53.134.0:5173',
       'http://13.53.134.0:5000',
-      // Production - add all your Vercel domains
+      // Production domains
+      'https://taskaway.com.au',
+      'https://www.taskaway.com.au',
       'https://task-it-git-main-shamir1.vercel.app',
       'https://task-it-kappa.vercel.app',
       // Add any other domains you might use
