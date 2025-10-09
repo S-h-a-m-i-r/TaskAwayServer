@@ -277,23 +277,46 @@ export const resetUserPassword = async (req, res) => {
 };
 
 const verifyGoogleToken = async (token) => {
-  const ticket = await googleClient.verifyIdToken({
-    idToken: token,
-    audience: process.env.GOOGLE_CLIENT_ID
-  });
+  console.log('🔍 Google Auth Debug - Starting token verification');
+  console.log('🔍 Google Auth Debug - Token length:', token.length);
+  console.log('🔍 Google Auth Debug - Google Client ID:', process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Not set');
+  
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
 
-  const payload = ticket.getPayload();
-  if (!payload) {
-    throw createError.unauthorized('Invalid Google token');
+    console.log('✅ Google Auth Debug - Token verification successful');
+    
+    const payload = ticket.getPayload();
+    if (!payload) {
+      console.error('❌ Google Auth Error - No payload in verified token');
+      throw createError.unauthorized('Invalid Google token - no payload');
+    }
+
+    console.log('🔍 Google Auth Debug - Token payload:', {
+      email: payload.email,
+      given_name: payload.given_name,
+      family_name: payload.family_name,
+      name: payload.name,
+      aud: payload.aud,
+      iss: payload.iss
+    });
+
+    const { email, given_name, family_name, name } = payload;
+
+    if (!email) {
+      console.error('❌ Google Auth Error - No email in token payload');
+      throw createError.unauthorized('Email not provided by Google');
+    }
+
+    console.log('✅ Google Auth Debug - Token verification completed successfully');
+    return { email, given_name, family_name, name };
+  } catch (error) {
+    console.error('❌ Google Auth Error - Token verification failed:', error);
+    throw error;
   }
-
-  const { email, given_name, family_name, name } = payload;
-
-  if (!email) {
-    throw createError.unauthorized('Email not provided by Google');
-  }
-
-  return { email, given_name, family_name, name };
 };
 
 const handleGoogleTokenError = (error) => {
@@ -327,17 +350,26 @@ const handleGoogleTokenError = (error) => {
 };
 
 export const googleAuthUser = async ({ token }) => {
+  console.log('🔍 Google Auth Debug - Starting googleAuthUser function');
+  
   try {
     if (!token) {
+      console.error('❌ Google Auth Error - No token provided');
       throw createError.badRequest('Google token is required');
     }
 
+    console.log('🔍 Google Auth Debug - Token provided, length:', token.length);
+
     // Verify the Google token
     const { email } = await verifyGoogleToken(token);
+    console.log('🔍 Google Auth Debug - Token verified, email:', email);
 
     // Check if user exists in database
+    console.log('🔍 Google Auth Debug - Searching for user in database');
     let user = await User.findOne({ email: email.toLowerCase() });
+    
     if (!user) {
+      console.log('❌ Google Auth Error - User not found in database for email:', email);
       // User doesn't exist, create new user
       return {
         error: true,
@@ -345,21 +377,40 @@ export const googleAuthUser = async ({ token }) => {
         userData: null,
         token: null
       };
-    } else if (!user.isEmailVerified) {
-      // User exists, update email verification status if needed
-      user.isEmailVerified = true;
-      await user.save();
+    } else {
+      console.log('✅ Google Auth Debug - User found:', {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified
+      });
+      
+      if (!user.isEmailVerified) {
+        console.log('🔍 Google Auth Debug - Updating email verification status');
+        // User exists, update email verification status if needed
+        user.isEmailVerified = true;
+        await user.save();
+        console.log('✅ Google Auth Debug - Email verification status updated');
+      }
     }
 
     // Remove sensitive data
     const { passwordHash, ...userData } = user.toObject();
+    console.log('🔍 Google Auth Debug - User data prepared for response');
 
-    return {
+    const authToken = generateToken(user._id, user.role);
+    console.log('✅ Google Auth Debug - Auth token generated');
+
+    const result = {
       error: false,
       userData,
-      token: generateToken(user._id, user.role)
+      token: authToken
     };
+    
+    console.log('✅ Google Auth Debug - Google auth completed successfully');
+    return result;
   } catch (error) {
+    console.error('❌ Google Auth Error - googleAuthUser failed:', error);
     handleGoogleTokenError(error);
   }
 };

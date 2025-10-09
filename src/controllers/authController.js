@@ -96,15 +96,31 @@ export const resetPassword = async (req, res, next) => {
 };
 
 export const googleAuth = async (req, res, next) => {
+  console.log('🔍 Google Auth Controller Debug - Starting googleAuth controller');
+  console.log('🔍 Google Auth Controller Debug - Request body:', req.body);
+  
   try {
     const result = await googleAuthUser(req.body);
+    console.log('🔍 Google Auth Controller Debug - Service result:', result);
 
+    if (result.error) {
+      console.log('❌ Google Auth Controller Error - Service returned error:', result.message);
+      return res.status(404).json({
+        success: false,
+        message: result.message,
+        user: null,
+        token: null
+      });
+    }
+
+    console.log('✅ Google Auth Controller Debug - Sending successful response');
     res.status(200).json({
       success: true,
       user: result?.userData,
       token: result?.token
     });
   } catch (error) {
+    console.error('❌ Google Auth Controller Error - Controller failed:', error);
     next(error);
   }
 };
