@@ -1,4 +1,19 @@
 import User from '../models/User.js';
+import {
+  generatePresignedPutUrl,
+  generatePresignedGetUrl,
+  generateProfilePictureS3Key,
+  isValidProfilePictureType,
+  isValidFileSize,
+  deleteFileFromS3,
+  getS3Url
+} from '../config/s3.js';
+import {
+  generateProfilePictureUploadUrlService,
+  updateUserProfilePictureService,
+  getProfilePictureDownloadUrlService,
+  deleteUserProfilePictureService
+} from '../services/profilePictureService.js';
 
 // Get all users with pagination
 export const getAllUsers = async (req, res, next) => {
@@ -352,6 +367,123 @@ export const getUserStats = async (req, res, next) => {
       }
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+// Generate presigned URL for profile picture upload
+export const uploadProfilePicture = async (req, res, next) => {
+  try {
+    const { filename, contentType, fileSize } = req.body;
+    const userId = req.user._id;
+
+    const result = await generateProfilePictureUploadUrlService(
+      filename,
+      contentType,
+      fileSize,
+      userId
+    );
+
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update user profile picture URL in database
+export const updateProfilePicture = async (req, res, next) => {
+  try {
+    const { s3Key } = req.body;
+    const userId = req.user._id;
+
+    if (!s3Key) {
+      return res.status(400).json({
+        success: false,
+        message: 'S3 key is required'
+      });
+    }
+
+    const result = await updateUserProfilePictureService(userId, s3Key);
+
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Update user profile information
+export const updateUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { firstName, lastName, userName, email, profilePicture } = req.body;
+
+    // Validate required fields
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+
+    // Check if user exists
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if email is being updated and if it's already taken by another user
+    if (email && email !== user.email) {
+      const existingUser = await User.findOne({ email, _id: { $ne: id } });
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email is already taken by another user'
+        });
+      }
+    }
+
+    // Check if username is being updated and if it's already taken by another user
+    if (userName && userName !== user.userName) {
+      const existingUser = await User.findOne({ userName, _id: { $ne: id } });
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'Username is already taken by another user'
+        });
+      }
+    }
+
+    // Update user fields
+    const updateData = {};
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (userName !== undefined) updateData.userName = userName;
+    if (email !== undefined) updateData.email = email;
+    if (profilePicture !== undefined)
+      updateData.profilePicture = profilePicture;
+
+    // Update the user
+    const updatedUser = await User.findByIdAndUpdate(id, updateData, {
+      new: true,
+      runValidators: true
+    });
+
+    // Remove sensitive information
+    const userResponse = updatedUser.toObject();
+    delete userResponse.password;
+    delete userResponse.resetPasswordToken;
+    delete userResponse.resetPasswordExpires;
+
+    res.status(200).json({
+      success: true,
+      message: 'User updated successfully',
+      data: userResponse
+    });
+  } catch (error) {
+    console.error('Update user error:', error);
     next(error);
   }
 };

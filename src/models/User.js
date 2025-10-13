@@ -93,8 +93,7 @@ const userSchema = new mongoose.Schema(
       token: {
         type: String,
         default: null
-      },
-      
+      }
     },
     activeSubscription: {
       type: mongoose.Schema.Types.ObjectId,
@@ -103,7 +102,20 @@ const userSchema = new mongoose.Schema(
     },
     subscriptionStatus: {
       type: String,
-      enum: ['active', 'canceled', 'past_due', 'incomplete', 'incomplete_expired', 'trialing', 'unpaid', null],
+      enum: [
+        'active',
+        'canceled',
+        'past_due',
+        'incomplete',
+        'incomplete_expired',
+        'trialing',
+        'unpaid',
+        null
+      ],
+      default: null
+    },
+    profilePicture: {
+      type: String,
       default: null
     }
   },
