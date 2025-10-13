@@ -100,6 +100,12 @@ export const generateS3Key = (taskId, filename, timestamp) => {
   return `tasks/${taskId}/${timestamp}-${sanitizedFilename}`;
 };
 
+// Generate unique S3 key for profile picture
+export const generateProfilePictureS3Key = (userId, filename, timestamp) => {
+  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
+  return `profile-pictures/${userId}/${timestamp}-${sanitizedFilename}`;
+};
+
 // Validate file type
 export const isValidFileType = (mimetype) => {
   const allowedTypes = [
@@ -117,10 +123,34 @@ export const isValidFileType = (mimetype) => {
   return allowedTypes.includes(mimetype);
 };
 
+// Validate profile picture file type (only PNG, JPG, JPEG)
+export const isValidProfilePictureType = (mimetype) => {
+  const allowedImageTypes = [
+    'image/png',
+    'image/jpeg',
+    'image/jpg'
+  ];
+  return allowedImageTypes.includes(mimetype);
+};
+
 // Validate file size (in bytes)
-export const isValidFileSize = (size) => {
-  const maxSize = 10 * 1024 * 1024; // 10MB per file
+export const isValidFileSize = (size, customMaxSize = null) => {
+  const maxSize = customMaxSize || 10 * 1024 * 1024; // Default 10MB per file
   return size <= maxSize;
+};
+
+// Get full S3 URL from key
+export const getS3Url = (key) => {
+  if (!key) return null;
+
+  // If key already contains the full URL, return it
+  if (key.startsWith('http')) {
+    return key;
+  }
+
+  // Construct the S3 URL
+  const region = process.env.AWS_REGION || 'eu-north-1';
+  return `https://${BUCKET_NAME}.s3.${region}.amazonaws.com/${key}`;
 };
 
 // Test S3 connection

@@ -1,16 +1,20 @@
 import Task from '../models/Task.js';
-import { 
-  generatePresignedPutUrl, 
-  generatePresignedGetUrl, 
-  deleteFileFromS3, 
-  generateS3Key, 
-  isValidFileType, 
-  isValidFileSize 
+import {
+  generatePresignedPutUrl,
+  generatePresignedGetUrl,
+  deleteFileFromS3,
+  isValidFileType,
+  isValidFileSize
 } from '../config/s3.js';
-import AppError  from '../utils/AppError.js';
+import AppError from '../utils/AppError.js';
 
 // Generate pre-signed upload URL for a file
-export const generateUploadUrlService = async (fileName, fileType, fileSize, userId) => {
+export const generateUploadUrlService = async (
+  fileName,
+  fileType,
+  fileSize,
+  userId
+) => {
   try {
     // Validate file type
     if (!isValidFileType(fileType)) {
@@ -50,7 +54,10 @@ export const attachFilesToTaskService = async (taskId, files, userId) => {
     }
 
     // Check if user has permission to upload files to this task
-    if (task.createdBy.toString() !== userId && task.assignedTo?.toString() !== userId) {
+    if (
+      task.createdBy.toString() !== userId &&
+      task.assignedTo?.toString() !== userId
+    ) {
       throw new AppError('Unauthorized to upload files to this task', 403);
     }
 
@@ -60,8 +67,13 @@ export const attachFilesToTaskService = async (taskId, files, userId) => {
     }
 
     // Check total file size limit (60MB)
-    const currentTotalSize = task.files ? task.files.reduce((acc, file) => acc + file.size, 0) : 0;
-    const newFilesTotalSize = files.reduce((acc, file) => acc + file.fileSize, 0);
+    const currentTotalSize = task.files
+      ? task.files.reduce((acc, file) => acc + file.size, 0)
+      : 0;
+    const newFilesTotalSize = files.reduce(
+      (acc, file) => acc + file.fileSize,
+      0
+    );
     if (currentTotalSize + newFilesTotalSize > 60 * 1024 * 1024) {
       throw new AppError('Total file size would exceed 60MB limit', 400);
     }
@@ -75,10 +87,10 @@ export const attachFilesToTaskService = async (taskId, files, userId) => {
     for (const fileData of files) {
       const { fileName, fileSize, fileType, fileKey } = fileData;
 
-      // Create file object
+      // Create file object with S3 key (presigned URLs will be generated when needed)
       const fileObject = {
         filename: fileName,
-        url: `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION || 'eu-north-1'}.amazonaws.com/${fileKey}`,
+        url: fileKey, // Store S3 key instead of direct URL for security
         size: fileSize,
         type: fileType,
         fileKey: fileKey,
@@ -93,7 +105,9 @@ export const attachFilesToTaskService = async (taskId, files, userId) => {
       });
 
       // Check if file with same key already exists
-      const existingFileIndex = task.files.findIndex(file => file.fileKey === fileKey);
+      const existingFileIndex = task.files.findIndex(
+        (file) => file.fileKey === fileKey
+      );
       if (existingFileIndex !== -1) {
         // Update existing file
         console.log('🔄 Updating existing file with key:', fileKey);
@@ -108,12 +122,15 @@ export const attachFilesToTaskService = async (taskId, files, userId) => {
     await task.save();
 
     // Log what was saved for debugging
-    console.log('💾 Task saved. Files in database:', task.files.map(f => ({
-      filename: f.filename,
-      fileKey: f.fileKey,
-      size: f.size,
-      type: f.type
-    })));
+    console.log(
+      '💾 Task saved. Files in database:',
+      task.files.map((f) => ({
+        filename: f.filename,
+        fileKey: f.fileKey,
+        size: f.size,
+        type: f.type
+      }))
+    );
 
     return {
       success: true,

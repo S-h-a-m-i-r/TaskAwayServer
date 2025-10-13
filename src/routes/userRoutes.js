@@ -9,8 +9,16 @@ import {
   getUsersByRole,
   getVerifiedUsers,
   getUsersByDateRange,
-  getUserStats
+  getUserStats,
+  uploadProfilePicture,
+  updateProfilePicture,
+  updateUser
 } from '../controllers/usersController.js';
+import {
+  getProfilePictureDownloadUrlService,
+  deleteUserProfilePictureService
+} from '../services/profilePictureService.js';
+import { authenticateToken } from '../middleware/auth.js';
 // import {
 //   updatePaymentMethod,
 //   removePaymentMethod
@@ -45,6 +53,39 @@ router.get('/email/:email', getUserByEmail);
 
 // Get user by username
 router.get('/username/:userName', getUserByUsername);
+
+// Profile picture routes (protected) - These must come before /:id route
+router.post(
+  '/profile-picture/upload-url',
+  authenticateToken,
+  uploadProfilePicture
+);
+router.put('/profile-picture', authenticateToken, updateProfilePicture);
+router.get(
+  '/profile-picture/download',
+  authenticateToken,
+  async (req, res, next) => {
+    try {
+      const userId = req.user._id;
+      const result = await getProfilePictureDownloadUrlService(userId);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+router.delete('/profile-picture', authenticateToken, async (req, res, next) => {
+  try {
+    const userId = req.user._id;
+    const result = await deleteUserProfilePictureService(userId);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Update user profile (protected) - This must come after specific routes
+router.put('/:id', authenticateToken, updateUser);
 
 // Payment method routes (protected)
 // router.put('/payment-method', auth, updatePaymentMethod);
