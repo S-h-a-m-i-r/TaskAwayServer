@@ -4,7 +4,8 @@ import {
   register,
   login,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  googleAuth
 } from '../controllers/authController.js';
 import { validateRegister } from '../middleware/validateRegister.js';
 import { validatePasswordReset } from '../middleware/validatePasswordReset.js';
@@ -23,5 +24,6 @@ router.post(
 
 router.post('/reset-password', validatePasswordReset, resetPassword);
 router.get('/verify-email', verifyEmail);
+router.post('/google', googleAuth);
 
 export default router;

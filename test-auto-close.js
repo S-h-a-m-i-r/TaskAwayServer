@@ -215,3 +215,4 @@ async function testAutoClose() {
 
 // Run the test
 testAutoClose();
+

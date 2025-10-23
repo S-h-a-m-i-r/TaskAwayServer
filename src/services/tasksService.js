@@ -126,7 +126,7 @@ export async function viewTaskService(taskId, user = null) {
   }
 
   const messages = await Message.find({ taskId })
-    .populate('senderId', 'name email')
+    .populate('senderId', 'email firstName lastName userName')
     .sort({ timestamp: 1 });
 
   // Determine if current user is the assignee
