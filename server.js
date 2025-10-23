@@ -41,45 +41,7 @@ const io = new Server(server, {
 
 connectDB();
 
-// app.use(helmet());
-//on suggestion from copiltot
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: [
-          "'self'",
-          "'unsafe-inline'",
-          "https://accounts.google.com",
-          "https://www.gstatic.com"
-        ],
-        styleSrc: [
-          "'self'",
-          "'unsafe-inline'",
-          "https://fonts.googleapis.com"
-        ],
-        connectSrc: [
-          "'self'",
-          "https://accounts.google.com",
-          "https://www.googleapis.com",
-          "wss:",
-          "ws:"
-        ],
-        imgSrc: [
-          "'self'",
-          "data:",
-          "https://www.gstatic.com"
-        ],
-        frameSrc: [
-          "'self'",
-          "https://accounts.google.com"
-        ],
-        objectSrc: ["'none'"]
-      }
-    }
-  })
-);
+app.use(helmet());
 
 app.use(
   cors({
