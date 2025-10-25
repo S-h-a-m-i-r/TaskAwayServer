@@ -14,7 +14,10 @@ import jwt from 'jsonwebtoken';
 import User from './src/models/User.js';
 import mongoose from 'mongoose';
 import path from 'path';
-import { initEventListeners } from './src/services/eventService.js';
+import eventEmitter, {
+  initEventListeners
+} from './src/services/eventService.js';
+import { NotificationService } from './src/services/notificationService.js';
 import schedulerService from './src/services/schedulerService.js';
 
 dotenv.config();
@@ -42,10 +45,6 @@ const io = new Server(server, {
 connectDB();
 
 // app.use(helmet());
-
-
-
-
 
 app.use(
   cors({
@@ -89,6 +88,10 @@ io.use(async (socket, next) => {
 // Socket.IO connection handler
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.user._id}`);
+
+  // Join user to their personal notification room
+  socket.join(`user_${socket.user._id}`);
+  console.log(`📡 User ${socket.user._id} joined notification room`);
 
   // Join task chat room
   socket.on('joinTaskChat', async (taskId) => {
@@ -139,14 +142,6 @@ io.on('connection', (socket) => {
         return;
       }
 
-      const isOwner = task.createdBy.toString() === socket.user._id;
-      const isAssignee =
-        task.assignedTo && task.assignedTo.toString() === socket.user._id;
-      // if (!isOwner && !isAssignee) {
-      //   socket.emit('error', 'Unauthorized to send message');
-      //   return;
-      // }
-
       // Save message to MongoDB
       const message = new Message({
         taskId,
@@ -163,6 +158,14 @@ io.on('connection', (socket) => {
 
       // Broadcast message to task room
       io.to(taskId).emit('receiveMessage', populatedMessage);
+
+      // Emit message sent event for notifications
+      eventEmitter.emit('message.sent', {
+        taskId,
+        senderId: socket.user._id,
+        messageId: message._id
+      });
+
       if (process.env.NODE_ENV === 'development') {
         console.log(`Message sent in task ${taskId} by ${socket.user._id}`);
       }
@@ -186,8 +189,12 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    // Leave user's notification room
+    socket.leave(`user_${socket.user._id}`);
+
     if (process.env.NODE_ENV === 'development') {
       console.log(`User disconnected: ${socket.user._id}`);
+      console.log(`📡 User ${socket.user._id} left notification room`);
     }
   });
 });
@@ -260,6 +267,10 @@ console.log('✅ Environment variables validated');
 try {
   await connectDB();
   initEventListeners();
+
+  // Initialize notification service with Socket.IO
+  NotificationService.initialize(io);
+
   schedulerService.start();
   console.log('✅ MongoDB connection validated');
 } catch (error) {

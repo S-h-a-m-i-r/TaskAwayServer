@@ -5,6 +5,7 @@ import { Plan, complexKeywords } from '../utils/utilityEnums.js';
 import Message from '../models/Message.js';
 import { deductCredits } from './creditsService.js';
 import Credit from '../models/Credit.js';
+import eventEmitter from './eventService.js';
 
 export async function createTaskService(taskData, user) {
   try {
@@ -97,6 +98,12 @@ export async function createTaskService(taskData, user) {
     await task.save();
     await deductCredits(user._id, task._id, creditCost, creditBatches);
 
+    // Emit task created event for notifications
+    eventEmitter.emit('task.created', {
+      taskId: task._id,
+      createdBy: user._id
+    });
+
     return {
       success: true,
       task: { _id: task._id, message: 'Task created Successfully' }
@@ -151,7 +158,7 @@ export async function viewTaskService(taskId, user = null) {
   };
 }
 
-export async function taskAssignService(taskId, userId) {
+export async function taskAssignService(taskId, userId, assignedBy = null) {
   if (!taskId || !userId) {
     const error = new Error('Task ID and User ID are required');
     error.status = 400;
@@ -174,6 +181,14 @@ export async function taskAssignService(taskId, userId) {
   task.assignedToRole = user?.role;
   task.status = 'InProgress';
   await task.save();
+
+  // Emit task assigned event for notifications
+  eventEmitter.emit('task.assigned', {
+    taskId: task._id,
+    assignedTo: userId,
+    assignedBy: assignedBy || task.createdBy
+  });
+
   return { success: true, data: task };
 }
 
@@ -220,12 +235,22 @@ async function updateTaskHistory(task, newUser) {
   }
 }
 
-export async function updateTaskService(taskId, updateData) {
+export async function updateTaskService(taskId, updateData, updatedBy = null) {
   if (!taskId || !updateData) {
     const error = new Error('Task ID and update data are required');
     error.status = 400;
     throw error;
   }
+
+  // Get the current task to check for status changes
+  const currentTask = await Task.findById(taskId);
+  if (!currentTask) {
+    const error = new Error('Task not found');
+    error.status = 404;
+    throw error;
+  }
+
+  const oldStatus = currentTask.status;
 
   // Validate and normalize status if it's being updated
   if (updateData.status) {
@@ -244,6 +269,16 @@ export async function updateTaskService(taskId, updateData) {
     const error = new Error('Task not found');
     error.status = 404;
     throw error;
+  }
+
+  // Emit status change notification if status was updated
+  if (updateData.status && oldStatus !== updateData.status) {
+    eventEmitter.emit('task.statusChanged', {
+      taskId: task._id,
+      oldStatus,
+      newStatus: updateData.status,
+      changedBy: updatedBy || task.createdBy
+    });
   }
 
   return { success: true, data: task };

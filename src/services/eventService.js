@@ -3,7 +3,8 @@ import Transaction from '../models/transaction.js';
 import Subscription from '../models/subscription.js';
 import User from '../models/User.js';
 import { addCredits } from './creditsService.js';
-import { EventEmitter } from 'events';
+import notificationService from './notificationService.js';
+import { EventEmitter } from 'node:events';
 
 const eventEmitter = new EventEmitter();
 export default eventEmitter;
@@ -12,20 +13,19 @@ export function initEventListeners() {
   // Subscription created
   eventEmitter.on('subscription.created', async (data) => {
     try {
-      const {
-        userId,
-        
-      } = data;
+      const { userId } = data;
 
-      const startDate = data.currentPeriodStart instanceof Date ? 
-        data.currentPeriodStart : new Date();
-        
-      const endDate = data.currentPeriodEnd instanceof Date ? 
-        data.currentPeriodEnd : new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-      
-      console.log('🔄 Using dates:', { 
-        start: startDate.toISOString(), 
-        end: endDate.toISOString() 
+      const startDate = data.currentPeriodStart
+        ? data.currentPeriodStart
+        : new Date();
+
+      const endDate = data.currentPeriodEnd
+        ? data.currentPeriodEnd
+        : new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+      console.log('🔄 Using dates:', {
+        start: startDate.toISOString(),
+        end: endDate.toISOString()
       });
       const subscription = await Subscription.create({
         user: data.userId,
@@ -37,7 +37,6 @@ export function initEventListeners() {
         status: data.status || 'active',
         metadata: data.metadata || {}
       });
-      
       await User.findByIdAndUpdate(data.userId, {
         activeSubscription: subscription._id,
         subscriptionStatus: data.status || 'active',
@@ -53,7 +52,15 @@ export function initEventListeners() {
   // Subscription updated
   eventEmitter.on('subscription.updated', async (data) => {
     try {
-      const { userId, stripeSubscriptionId, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd, canceledAt } = data;
+      const {
+        userId,
+        stripeSubscriptionId,
+        status,
+        currentPeriodStart,
+        currentPeriodEnd,
+        cancelAtPeriodEnd,
+        canceledAt
+      } = data;
       const subscription = await Subscription.findOne({ stripeSubscriptionId });
 
       if (!subscription) {
@@ -62,9 +69,12 @@ export function initEventListeners() {
       }
 
       subscription.status = status;
-      if (currentPeriodStart) subscription.currentPeriodStart = new Date(currentPeriodStart * 1000);
-      if (currentPeriodEnd) subscription.currentPeriodEnd = new Date(currentPeriodEnd * 1000);
-      if (cancelAtPeriodEnd !== undefined) subscription.cancelAtPeriodEnd = cancelAtPeriodEnd;
+      if (currentPeriodStart)
+        subscription.currentPeriodStart = new Date(currentPeriodStart * 1000);
+      if (currentPeriodEnd)
+        subscription.currentPeriodEnd = new Date(currentPeriodEnd * 1000);
+      if (cancelAtPeriodEnd !== undefined)
+        subscription.cancelAtPeriodEnd = cancelAtPeriodEnd;
       if (canceledAt) subscription.canceledAt = new Date(canceledAt * 1000);
       await subscription.save();
 
@@ -78,7 +88,14 @@ export function initEventListeners() {
   // Payment succeeded
   eventEmitter.on('payment.succeeded', async (data) => {
     try {
-      const { userId, amount, stripeTransactionId, subscriptionId, description, metadata = {} } = data;
+      const {
+        userId,
+        amount,
+        stripeTransactionId,
+        subscriptionId,
+        description,
+        metadata = {}
+      } = data;
 
       await Transaction.create({
         user: userId,
@@ -105,7 +122,14 @@ export function initEventListeners() {
   // Payment failed
   eventEmitter.on('payment.failed', async (data) => {
     try {
-      const { userId, amount, stripeTransactionId, subscriptionId, description, metadata = {} } = data;
+      const {
+        userId,
+        amount,
+        stripeTransactionId,
+        subscriptionId,
+        description,
+        metadata = {}
+      } = data;
 
       await Transaction.create({
         user: userId,
@@ -121,6 +145,44 @@ export function initEventListeners() {
       console.log(`⚠️ Payment failed for user ${userId}`);
     } catch (err) {
       console.error('❌ Error payment.failed:', err);
+    }
+  });
+
+  // ==================== NOTIFICATION EVENTS ====================
+
+  // Task created notification
+  eventEmitter.on('task.created', async (data) => {
+    try {
+      await notificationService.handleTaskCreated(data);
+    } catch (err) {
+      console.error('❌ Error task.created notification:', err);
+    }
+  });
+
+  // New message notification
+  eventEmitter.on('message.sent', async (data) => {
+    try {
+      await notificationService.handleNewMessage(data);
+    } catch (err) {
+      console.error('❌ Error message.sent notification:', err);
+    }
+  });
+
+  // Task assigned notification
+  eventEmitter.on('task.assigned', async (data) => {
+    try {
+      await notificationService.handleTaskAssigned(data);
+    } catch (err) {
+      console.error('❌ Error task.assigned notification:', err);
+    }
+  });
+
+  // Task status changed notification
+  eventEmitter.on('task.statusChanged', async (data) => {
+    try {
+      await notificationService.handleTaskStatusChanged(data);
+    } catch (err) {
+      console.error('❌ Error task.statusChanged notification:', err);
     }
   });
 }
