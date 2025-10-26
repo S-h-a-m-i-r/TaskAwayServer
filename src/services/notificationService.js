@@ -277,16 +277,44 @@ class NotificationService {
       }
 
       // Remove duplicates
-      const uniqueRecipients = [...new Set(recipients)];
 
+      const uniqueRecipients = [...new Set(recipients)];
       if (uniqueRecipients.length > 0) {
+        const usersWithRoles = await User.find({
+          _id: { $in: uniqueRecipients }
+        }).select('_id role');
         const notificationMessage = `New message in task "${task.title}" from ${sender.firstName} ${sender.lastName}`;
-        const link = `/task/${taskId}`;
-        await this.createBulkNotifications(uniqueRecipients, {
-          sender: senderId,
-          message: notificationMessage,
-          link
+        // const link = `/task/${taskId}`;
+
+        const notificationsToCreate = usersWithRoles.map((user) => {
+          // Generate the link based on this specific user's role
+          const link =
+            user.role === 'CUSTOMER'
+              ? `/task/${taskId}`
+              : `/${user.role}/task/${taskId}`;
+
+          // Return the complete object for this user
+          return {
+            recipient: user._id,
+            sender: senderId,
+            message: notificationMessage,
+            link: link, // The link is now custom for this user
+            seen: false
+          };
         });
+
+        const createdNotifications = await Notification.insertMany(
+          notificationsToCreate
+        );
+
+        for (const notification of createdNotifications) {
+          this.sendRealtimeNotification(notification.recipient.toString(), {
+            _id: notification._id,
+            message: notification.message,
+            link: notification.link,
+            sender: notification.sender
+          });
+        }
 
         console.log(
           `✅ Message notifications sent to ${uniqueRecipients.length} recipients`
