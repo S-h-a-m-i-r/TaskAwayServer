@@ -6,6 +6,7 @@ import Message from '../models/Message.js';
 import { deductCredits } from './creditsService.js';
 import Credit from '../models/Credit.js';
 import eventEmitter from './eventService.js';
+import { assessTaskCost } from './openAIService.js';
 
 export async function createTaskService(taskData, user) {
   try {
@@ -16,8 +17,9 @@ export async function createTaskService(taskData, user) {
     let creditBatches = [];
     if (user.planType === Plan['10_CREDITS']) {
       creditCost = await determineTaskCredits(
+        taskData.title || '',
         taskData.description || '',
-        taskData.isRecurring
+        taskData.helperText || ''
       );
       creditBatches = await Credit.find({
         user: user?._id,
@@ -319,22 +321,38 @@ export async function listTasksService(query, user) {
   return { success: true, tasks: tasks };
 }
 
-export async function determineTaskCredits(description, isRecurring = false) {
-  function containsKeyword(description) {
-    const lowerDesc = description.toLowerCase();
-
-    return complexKeywords.some((keyword) => {
-      const regex = new RegExp(`\\b${keyword}\\b`, 'i'); // case-insensitive, whole word
-      return regex.test(lowerDesc);
+export async function determineTaskCredits(
+  title,
+  description = '',
+  helperText = ''
+) {
+  try {
+    const aiResult = await assessTaskCost({
+      title: title || 'Untitled Task',
+      description: description || '',
+      helperText: helperText || '',
+      strictMode: false
     });
+    return aiResult.creditCost;
+  } catch (error) {
+    console.warn(
+      'AI credit assessment failed, using fallback logic:',
+      error.message
+    );
+
+    function containsKeyword(text) {
+      const lowerText = text.toLowerCase();
+      return complexKeywords.some((keyword) => {
+        const regex = new RegExp(`\\b${keyword}\\b`, 'i'); // case-insensitive, whole word
+        return regex.test(lowerText);
+      });
+    }
+
+    const allText = `${title} ${description} ${helperText}`;
+    const hasComplexKeyword = containsKeyword(allText);
+
+    return hasComplexKeyword ? 2 : 1;
   }
-  let cost = 1;
-  if (isRecurring) {
-    cost = 2;
-  } else {
-    cost = containsKeyword(description) ? 2 : 1;
-  }
-  return cost;
 }
 
 function calculateEndDateFromCount(startDate, pattern, count, settings) {

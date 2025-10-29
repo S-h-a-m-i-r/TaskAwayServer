@@ -36,7 +36,7 @@ export const viewTask = async (req, res, next) => {
 export const assignTask = async (req, res, next) => {
   // we can also get the user from token as well
   try {
-    const { taskId } = req.params
+    const { taskId } = req.params;
     const { userId } = req.body;
 
     const result = await taskAssignService(taskId, userId);
@@ -67,7 +67,7 @@ export const reAssignTask = async (req, res, next) => {
 export const updateTask = async (req, res, next) => {
   try {
     const { taskId } = req.params;
-    const {updateData} = req.body;
+    const { updateData } = req.body;
     const result = await updateTaskService(taskId, updateData);
     res.status(200).json({
       ...result,
@@ -79,27 +79,26 @@ export const updateTask = async (req, res, next) => {
 };
 
 export const deleteTask = async (req, res, next) => {
-    try {
-      const { taskId } = req.params;
-      const result = await deleteTaskService(taskId);
-      res.status(200).json({
-        ...result,
-        message: 'Task Deleted Successfully'
-      });
-    } catch (err) {
-      next(err);
-    }
-  };
-
-
-  export async function listTasks(req, res) {
-    try {
-      const result = await listTasksService(req.query, req.user);
-      res.status(200).json({
-        ...result,
-        message: 'Task list fetched Successfully'
-      });
-    } catch (err) {
-      next(err);
-    }
+  try {
+    const { taskId } = req.params;
+    const result = await deleteTaskService(taskId);
+    res.status(200).json({
+      ...result,
+      message: 'Task Deleted Successfully'
+    });
+  } catch (err) {
+    next(err);
   }
+};
+
+export async function listTasks(req, res, next) {
+  try {
+    const result = await listTasksService(req.query, req.user);
+    res.status(200).json({
+      ...result,
+      message: 'Task list fetched Successfully'
+    });
+  } catch (err) {
+    next(err);
+  }
+}

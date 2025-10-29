@@ -14,6 +14,7 @@ import {
   getProfilePictureDownloadUrlService,
   deleteUserProfilePictureService
 } from '../services/profilePictureService.js';
+import bcrypt from 'bcrypt';
 
 // Get all users with pagination
 export const getAllUsers = async (req, res, next) => {
@@ -411,6 +412,70 @@ export const updateProfilePicture = async (req, res, next) => {
   }
 };
 
+async function handlePasswordUpdate(req, user, bcrypt) {
+  const { password, currentPassword } = req.body;
+  const updateData = {};
+  if (!currentPassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'Current password is required to authorize this change.'
+    });
+  }
+
+  // Verify the provided current password against the one in the database.
+  const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+
+  if (!isMatch) {
+    return {
+      code: 400,
+      success: false,
+      message: 'Current Password is incorrect. Not authorized.'
+    };
+  }
+  if (!password) {
+    return {
+      code: 400,
+      success: false,
+      message: 'New password is required.'
+    };
+  }
+
+  if (currentPassword === password) {
+    return {
+      code: 400,
+      success: false,
+      message: 'New password cannot be the same as your current password.'
+    };
+  }
+  const [isSameAsSecondLast, isSameAsThirdLast] = await Promise.all([
+    user.secondLastPassword
+      ? bcrypt.compare(password, user.secondLastPassword)
+      : false,
+    user.thirdLastPassword
+      ? bcrypt.compare(password, user.thirdLastPassword)
+      : false
+  ]);
+
+  if (isSameAsSecondLast || isSameAsThirdLast) {
+    return {
+      code: 400,
+      success: false,
+      message:
+        'New password cannot be the same as one of your recent passwords.'
+    };
+  }
+  const saltRounds = 10;
+  const newPasswordHash = await bcrypt.hash(password, saltRounds);
+  updateData.passwordHash = newPasswordHash;
+  updateData.secondLastPassword = user.passwordHash; // The (now old) current password
+  updateData.thirdLastPassword = user.secondLastPassword; // The (now older) 2nd last
+  return {
+    code: 200,
+    success: true,
+    message: 'Password validation successful. Ready to update.',
+    ...updateData
+  };
+}
 // Update user profile information
 export const updateUser = async (req, res, next) => {
   try {
@@ -455,7 +520,6 @@ export const updateUser = async (req, res, next) => {
         });
       }
     }
-
     // Update user fields
     const updateData = {};
     if (firstName !== undefined) updateData.firstName = firstName;
@@ -465,7 +529,17 @@ export const updateUser = async (req, res, next) => {
     if (profilePicture !== undefined)
       updateData.profilePicture = profilePicture;
 
-    // Update the user
+    const result = await handlePasswordUpdate(req, user, bcrypt);
+    if (result.code !== 200) {
+      return res.status(result.code).json({
+        success: result.success,
+        message: result.message
+      });
+    } else {
+      updateData.passwordHash = result.passwordHash;
+      updateData.secondLastPassword = result.secondLastPassword;
+      updateData.thirdLastPassword = result.thirdLastPassword;
+    }
     const updatedUser = await User.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true
