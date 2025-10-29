@@ -63,10 +63,9 @@ CREDIT RULES:
 -----------------------------------
 1️⃣ **SIMPLE TASKS (1 credit / "true")**
 Return "true" if:
-- The task can be completed quickly (≈ under 30 minutes).
+- The task can be completed quickly (≈ under 30 minutes) in a single day.
 - It clearly says it’s *simple*, *short*, *quick*, *easy*, *straightforward*, or *minor*.
 - It involves filling, reading, or writing a *small or single form*.
-- It is a one-time action (not recurring).
 - It doesn’t mention creating, designing, editing, researching, analyzing, or preparing complex materials.
 
 ✅ Examples of "true" (1 credit):
