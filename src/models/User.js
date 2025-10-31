@@ -117,6 +117,10 @@ const userSchema = new mongoose.Schema(
     profilePicture: {
       type: String,
       default: null
+    },
+    lastLogin: {
+      type: Date,
+      default: null
     }
   },
   {

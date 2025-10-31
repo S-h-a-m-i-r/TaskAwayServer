@@ -5,7 +5,8 @@ import {
   updateUserPassword,
   forgetUserPassword,
   resetUserPassword,
-  googleAuthUser
+  googleAuthUser,
+  logoutUser
 } from '../services/authService.js';
 import { sendEmail } from '../services/emailService.js';
 
@@ -96,15 +97,20 @@ export const resetPassword = async (req, res, next) => {
 };
 
 export const googleAuth = async (req, res, next) => {
-  console.log('🔍 Google Auth Controller Debug - Starting googleAuth controller');
+  console.log(
+    '🔍 Google Auth Controller Debug - Starting googleAuth controller'
+  );
   console.log('🔍 Google Auth Controller Debug - Request body:', req.body);
-  
+
   try {
     const result = await googleAuthUser(req.body);
     console.log('🔍 Google Auth Controller Debug - Service result:', result);
 
     if (result.error) {
-      console.log('❌ Google Auth Controller Error - Service returned error:', result.message);
+      console.log(
+        '❌ Google Auth Controller Error - Service returned error:',
+        result.message
+      );
       return res.status(404).json({
         success: false,
         message: result.message,
@@ -113,14 +119,41 @@ export const googleAuth = async (req, res, next) => {
       });
     }
 
-    console.log('✅ Google Auth Controller Debug - Sending successful response');
+    console.log(
+      '✅ Google Auth Controller Debug - Sending successful response'
+    );
     res.status(200).json({
       success: true,
       user: result?.userData,
       token: result?.token
     });
   } catch (error) {
-    console.error('❌ Google Auth Controller Error - Controller failed:', error);
+    console.error(
+      '❌ Google Auth Controller Error - Controller failed:',
+      error
+    );
+    next(error);
+  }
+};
+
+export const logout = async (req, res, next) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not authenticated'
+      });
+    }
+
+    const result = await logoutUser(userId);
+
+    res.status(200).json({
+      success: true,
+      message: result.message
+    });
+  } catch (error) {
     next(error);
   }
 };

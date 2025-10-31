@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
 import connectDB from './src/config/db.js';
 import routes from './src/routes/index.js';
 import errorHandler from './src/middleware/errorHandler.js';
@@ -46,6 +47,19 @@ connectDB();
 
 // app.use(helmet());
 
+// Rate limiting configuration
+// General API rate limiter - 100 requests per 15 minutes per IP
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // Limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message:
+      'Too many requests from this IP, please try again after 15 minutes.'
+  },
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false // Disable the `X-RateLimit-*` headers
+});
 app.use(
   cors({
     origin: [
@@ -65,6 +79,9 @@ app.use(
 );
 app.use(express.json());
 app.use(morgan('dev'));
+
+// Apply general rate limiting to all API routes
+app.use('/api', generalLimiter);
 
 io.use(async (socket, next) => {
   try {

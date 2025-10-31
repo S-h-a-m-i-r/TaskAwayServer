@@ -23,6 +23,26 @@
       padding: 20px;
       display: flex;
       justify-content: space-between;
+      align-items: center;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .logo-container {
+      width: 150px;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      padding: 8px;
+    }
+    .logo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
     .header h1 {
       margin: 0;
@@ -108,8 +128,15 @@
   <div class="invoice-container">
     <!-- Header Section -->
     <div class="header">
-      <div>
-        <h1>{{data.businessName}}</h1>
+      <div class="header-left">
+        {{#if logoDataUrl}}
+        <div class="logo-container">
+          <img src="{{logoDataUrl}}" alt="TaskAway Logo" />
+        </div>
+        {{/if}}
+        <div>
+          <h1>{{data.businessName}}</h1>
+        </div>
       </div>
       <div class="header-right">
         <h2 style="margin:0; font-size:20px;">Invoice</h2>
@@ -173,6 +200,7 @@
         <div class="total-due">
           <p style="font-size:14px; color:#4b5563; margin:0 0 5px 0">Total due</p>
           <p class="amount">${{formatNumber data.total}}</p>
+          <p style="font-size:12px; color:#6b7280; margin:5px 0 0 0">Including GST</p>
         </div>
       </div>
 
@@ -209,11 +237,15 @@
           </div>
         </div>
         <div class="totals">
-          <div style="margin-bottom:10px">
-            <span style="font-size:14px; font-weight:600">Subtotal: </span>
-            <span style="font-size:14px">${{formatNumber data.subtotal}}</span>
+          <div style="margin-bottom:8px">
+            <span style="font-size:14px; font-weight:600">Subtotal (excluding GST): </span>
+            <span style="font-size:14px">${{formatNumber data.subtotalExcludingGST}}</span>
           </div>
-          <div style="font-size:18px; font-weight:bold">
+          <div style="margin-bottom:8px">
+            <span style="font-size:14px; font-weight:600">GST (10%): </span>
+            <span style="font-size:14px">${{formatNumber data.gst}}</span>
+          </div>
+          <div style="font-size:18px; font-weight:bold; padding-top:8px; border-top: 1px solid #e5e7eb">
             <span>Total ({{data.currency}}): </span>
             <span>${{formatNumber data.total}}</span>
           </div>

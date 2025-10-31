@@ -414,3 +414,30 @@ export const googleAuthUser = async ({ token }) => {
     handleGoogleTokenError(error);
   }
 };
+
+/**
+ * Update user's last login timestamp on logout
+ * @param {string} userId - User ID
+ * @returns {Promise<Object>} - Success response
+ */
+export const logoutUser = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      throw createError.notFound('User not found');
+    }
+
+    // Update lastLogin to current UTC date/time
+    user.lastLogin = new Date();
+    await user.save();
+
+    return {
+      success: true,
+      message: 'Logout successful'
+    };
+  } catch (error) {
+    console.error('Error updating last login on logout:', error);
+    throw error;
+  }
+};

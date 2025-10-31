@@ -18,65 +18,74 @@ const generateInvoiceData = (transaction, user) => {
   const today = new Date();
   const dueDate = new Date(today);
   dueDate.setDate(today.getDate() + 14); // Due in 14 days
-  
+
   // Format dates
   const formatDate = (date) => {
     return date.toISOString().split('T')[0]; // YYYY-MM-DD format
   };
-  
+
   // Generate invoice number using transaction ID and date
   const invoiceNumber = `INV-${today.getFullYear()}-${transaction._id.toString().slice(-6)}`;
-  
+
+  // Calculate GST breakdown first
+  // Assuming transaction.amount is the total amount paid (including GST)
+  const subtotalExcludingGST =
+    Math.round((transaction.amount / 1.1) * 100) / 100;
+  const gst = Math.round((transaction.amount / 1.1) * 0.1 * 100) / 100;
+
   // Create invoice item
   let description = 'Credit Purchase';
   let quantity = 1;
-  let unitPrice = transaction.amount;
-  let amount = transaction.amount;
-  
+  let unitPrice = subtotalExcludingGST; // Unit price excluding GST
+  let amount = subtotalExcludingGST; // Amount excluding GST
+
   // If credit amount is in metadata, use it to calculate unit price
   if (transaction.metadata && transaction.metadata.creditAmount) {
     description = `Purchase of ${transaction.metadata.creditAmount} TaskAway Credits`;
     quantity = Number(transaction.metadata.creditAmount);
-    unitPrice = transaction.amount / quantity;
-    amount = transaction.amount;
+    unitPrice = subtotalExcludingGST / quantity; // Unit price per credit excluding GST
+    amount = subtotalExcludingGST; // Total amount excluding GST
   }
-  
+
   return {
     invoiceNumber,
     reference: transaction._id.toString(),
     issueDate: formatDate(transaction.createdAt || today),
     dueDate: formatDate(dueDate),
-    
-    businessName: "TaskAway Solutions",
+
+    businessName: 'TaskAway Solutions',
     businessAddress: [
-      "789 Developer Lane",
-      "Tech Park Phase 3",
-      "San Francisco, CA 94107",
+      '789 Developer Lane',
+      'Tech Park Phase 3',
+      'San Francisco, CA 94107'
     ],
-    businessPhone: "+1 (415) 123-4567",
-    businessEmail: "billing@taskaway.com",
-    businessWebsite: "www.taskaway.com",
-    
-    clientName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Customer',
+    businessPhone: '+1 (415) 123-4567',
+    businessEmail: 'billing@taskaway.com',
+    businessWebsite: 'www.taskaway.com',
+
+    clientName:
+      `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Customer',
     clientAddress: [
-      user.address || "Client Address",
-      user.city || "Client City",
-      user.country || "Client Country",
+      user.address || 'Client Address',
+      user.city || 'Client City',
+      user.country || 'Client Country'
     ],
-    
+
     items: [
       {
-        id: "1",
+        id: '1',
         description,
         quantity,
         unitPrice,
-        amount,
+        amount
       }
     ],
-    
-    subtotal: transaction.amount,
-    total: transaction.amount,
-    currency: transaction.currency || "USD",
+
+    // GST calculation (10% of subtotal)
+    subtotalExcludingGST,
+    gst,
+    total: transaction.amount, // Total including GST
+    currency: transaction.currency || 'USD'
   };
 };
 

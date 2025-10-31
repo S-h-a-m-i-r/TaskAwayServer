@@ -415,11 +415,23 @@ export const updateProfilePicture = async (req, res, next) => {
 async function handlePasswordUpdate(req, user, bcrypt) {
   const { password, currentPassword } = req.body;
   const updateData = {};
+
+  // If password is not being updated, return success
+  if (!password && !currentPassword) {
+    return {
+      code: 200,
+      success: true,
+      message: 'No password update requested.'
+    };
+  }
+
+  // If password is being updated, current password is required
   if (!currentPassword) {
-    return res.status(400).json({
+    return {
+      code: 400,
       success: false,
       message: 'Current password is required to authorize this change.'
-    });
+    };
   }
 
   // Verify the provided current password against the one in the database.
@@ -529,13 +541,15 @@ export const updateUser = async (req, res, next) => {
     if (profilePicture !== undefined)
       updateData.profilePicture = profilePicture;
 
+    // Handle password update if password fields are provided
     const result = await handlePasswordUpdate(req, user, bcrypt);
     if (result.code !== 200) {
       return res.status(result.code).json({
         success: result.success,
         message: result.message
       });
-    } else {
+    } else if (result.passwordHash) {
+      // Only update password fields if password was actually being changed
       updateData.passwordHash = result.passwordHash;
       updateData.secondLastPassword = result.secondLastPassword;
       updateData.thirdLastPassword = result.thirdLastPassword;
