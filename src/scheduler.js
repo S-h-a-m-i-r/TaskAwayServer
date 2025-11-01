@@ -2,7 +2,8 @@ import cron from 'node-cron';
 import mongoose from 'mongoose';
 import {
   processRecurringTasks,
-  processAutoCloseCompletedTasks
+  processAutoCloseCompletedTasks,
+  processScheduledDataDeletion
 } from './schedulerUtils.js';
 
 class Scheduler {
@@ -23,7 +24,8 @@ class Scheduler {
         try {
           await Promise.all([
             processRecurringTasks(),
-            processAutoCloseCompletedTasks()
+            processAutoCloseCompletedTasks(),
+            processScheduledDataDeletion()
           ]);
           console.log('✅ Scheduler tasks completed');
         } catch (err) {
@@ -55,7 +57,8 @@ class Scheduler {
       cronExpression: '0 2 * * *',
       functions: [
         'Process recurring tasks',
-        'Auto-close completed tasks older than 24 hours'
+        'Auto-close completed tasks older than 24 hours',
+        'Process scheduled data deletion'
       ]
     };
   }
@@ -66,7 +69,8 @@ class Scheduler {
     try {
       await Promise.all([
         processRecurringTasks(),
-        processAutoCloseCompletedTasks()
+        processAutoCloseCompletedTasks(),
+        processScheduledDataDeletion()
       ]);
       console.log('✅ Manual trigger completed successfully');
     } catch (error) {

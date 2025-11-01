@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import DataDeletionSettings from './models/DataDeletionSettings.js';
+import { performScheduledDeletion } from './services/dataDeletionService.js';
 
 /**
  * Utility functions for scheduler operations
@@ -120,6 +122,83 @@ export async function processRecurringTasks() {
     console.log(`   - Errors: ${errorCount}`);
   } catch (error) {
     console.error('❌ Error in processRecurringTasks:', error);
+  }
+}
+
+/**
+ * Process scheduled data deletion based on configured settings
+ */
+export async function processScheduledDataDeletion() {
+  try {
+    const executionStartTime = new Date();
+    console.log('🔄 Starting scheduled data deletion processing...');
+    console.log(`⏰ Execution time: ${executionStartTime.toISOString()}`);
+
+    // Get active scheduled deletion settings
+    const settings = await DataDeletionSettings.findOne({ isActive: true });
+
+    if (!settings || !settings.schedulePeriod) {
+      console.log('📋 No scheduled data deletion configured');
+      return;
+    }
+
+    console.log(
+      `📋 Found active scheduled deletion: ${settings.schedulePeriod}`
+    );
+    console.log(
+      `📋 Last execution: ${settings.lastExecutionDate ? settings.lastExecutionDate.toISOString() : 'Never'}`
+    );
+
+    // Calculate what the cutoff date should be based on the schedule period
+    // This ensures we only delete data that has reached the exact age
+    const now = new Date();
+    let expectedCutoffDate;
+    switch (settings.schedulePeriod) {
+      case '1month':
+        expectedCutoffDate = new Date(now);
+        expectedCutoffDate.setMonth(now.getMonth() - 1);
+        break;
+      case '2months':
+        expectedCutoffDate = new Date(now);
+        expectedCutoffDate.setMonth(now.getMonth() - 2);
+        break;
+      case '3months':
+        expectedCutoffDate = new Date(now);
+        expectedCutoffDate.setMonth(now.getMonth() - 3);
+        break;
+      default:
+        console.error(`❌ Unknown schedule period: ${settings.schedulePeriod}`);
+        return;
+    }
+
+    console.log(`🔍 Verification:`);
+    console.log(`   - Schedule period: ${settings.schedulePeriod}`);
+    console.log(
+      `   - Expected cutoff date: ${expectedCutoffDate.toISOString()}`
+    );
+    console.log(`   - Only data created before this date will be deleted`);
+
+    // Perform the deletion (this function will use the same date calculation)
+    const result = await performScheduledDeletion(settings.schedulePeriod);
+
+    // Update last execution date
+    settings.lastExecutionDate = executionStartTime;
+    await settings.save();
+
+    const executionEndTime = new Date();
+    const executionDuration =
+      (executionEndTime.getTime() - executionStartTime.getTime()) / 1000;
+
+    console.log(`✅ Scheduled data deletion completed:`);
+    console.log(`   - Total records deleted: ${result.deletedCount}`);
+    console.log(`   - Details:`, result.details);
+    console.log(
+      `   - Execution duration: ${executionDuration.toFixed(2)} seconds`
+    );
+    console.log(`   - Next execution: Tomorrow at 2 AM UTC`);
+  } catch (error) {
+    console.error('❌ Error in processScheduledDataDeletion:', error);
+    // Don't throw error - let other scheduler tasks continue
   }
 }
 

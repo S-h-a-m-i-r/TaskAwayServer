@@ -10,6 +10,7 @@ import paymentRoute from './paymentRoute.js';
 import creditsRoute from './creditsRoutes.js';
 import invoiceRoutes from './invoiceRoutes.js';
 import schedulerRoutes from './schedulerRoutes.js';
+import dataDeletionRoutes from './dataDeletionRoutes.js';
 
 const router = express.Router();
 
@@ -135,4 +136,5 @@ router.use('/stripe', paymentRoute);
 router.use('/credits', creditsRoute);
 router.use('/invoices', invoiceRoutes);
 router.use('/scheduler', schedulerRoutes);
+router.use('/admin/data-deletion', dataDeletionRoutes);
 export default router;
